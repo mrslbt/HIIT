@@ -6,43 +6,39 @@
   <title>HIIT Runner</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
     :root {
-      --bg: #0b0b0f;
-      --surface: rgba(255,255,255,0.035);
-      --line: rgba(255,255,255,0.06);
-      --t1: #edeef1;
+      --bg: #0a0a0f;
+      --surface: rgba(255,255,255,0.04);
+      --line: rgba(255,255,255,0.07);
+      --t1: #f0f1f4;
       --t2: #8b93a1;
       --t3: #505868;
 
-      /* Phase system */
       --warmup: #f0a830;
-      --warmup-bg: #18140a;
-      --warmup-glow: rgba(240,168,48,0.12);
+      --warmup-bg: #1a1508;
+      --warmup-glow: rgba(240,168,48,0.25);
 
       --sprint: #ff4d4d;
-      --sprint-bg: #1a0a0a;
-      --sprint-glow: rgba(255,77,77,0.14);
+      --sprint-bg: #1f0808;
+      --sprint-glow: rgba(255,77,77,0.3);
 
       --recover: #4da6ff;
-      --recover-bg: #0a0e1a;
-      --recover-glow: rgba(77,166,255,0.12);
+      --recover-bg: #080e1f;
+      --recover-glow: rgba(77,166,255,0.25);
 
       --cool: #00d4aa;
-      --cool-bg: #0a1614;
-      --cool-glow: rgba(0,212,170,0.12);
+      --cool-bg: #081a15;
+      --cool-glow: rgba(0,212,170,0.25);
 
       --done-c: #34d399;
 
-      /* Active */
       --a: var(--warmup);
       --a-bg: var(--bg);
       --a-glow: var(--warmup-glow);
-
-      --ring-size: min(70vw, 300px);
     }
 
     html { height:100%; }
@@ -52,152 +48,159 @@
       background: var(--a-bg);
       color: var(--t1);
       min-height: 100dvh;
-      overflow-y: auto; overflow-x: hidden;
+      overflow: hidden;
       -webkit-font-smoothing: antialiased;
-      transition: background 0.9s ease;
+      transition: background 0.8s ease;
       display: flex; justify-content: center;
     }
 
-    /* ── Grain texture overlay ── */
+    /* ── Grain ── */
     body::after {
       content: '';
       position: fixed; inset: 0;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
       background-size: 200px;
-      pointer-events: none; z-index: 100;
-      opacity: 0.5;
+      pointer-events: none; z-index: 200;
+      opacity: 0.4;
     }
 
     /* ── Pulse ── */
     .pulse { position:fixed; inset:0; pointer-events:none; z-index:90; opacity:0; }
     .pulse.on { animation: gp 1s ease-in-out 5; }
     @keyframes gp {
-      0%   { opacity:0; box-shadow: inset 0 0 80px 20px var(--pc); }
-      35%  { opacity:1; box-shadow: inset 0 0 150px 50px var(--pc); }
-      100% { opacity:0; box-shadow: inset 0 0 80px 20px var(--pc); }
+      0%   { opacity:0; box-shadow: inset 0 0 100px 30px var(--pc); }
+      35%  { opacity:1; box-shadow: inset 0 0 180px 60px var(--pc); }
+      100% { opacity:0; box-shadow: inset 0 0 100px 30px var(--pc); }
     }
 
-    /* ── Ambient glow behind ring ── */
+    /* ── Ambient glow ── */
     .glow {
       position: fixed;
-      top: 30%; left: 50%;
+      top: 35%; left: 50%;
       transform: translate(-50%, -50%);
-      width: 400px; height: 400px;
-      background: radial-gradient(circle, var(--a-glow) 0%, transparent 70%);
+      width: 340px; height: 340px;
+      background: radial-gradient(circle, var(--a-glow) 0%, transparent 65%);
       pointer-events: none; z-index: 0;
-      transition: background 0.9s;
-      filter: blur(40px);
+      transition: background 0.8s;
+      filter: blur(30px);
     }
 
+    /* ── App shell ── */
     .app {
-      width:100%; max-width:420px;
-      padding: 12px 20px env(safe-area-inset-bottom, 20px);
-      display:flex; flex-direction:column;
-      min-height:100dvh;
-      position:relative; z-index:1;
+      width: 100%; max-width: 420px;
+      padding: 0 24px;
+      padding-top: env(safe-area-inset-top, 16px);
+      padding-bottom: env(safe-area-inset-bottom, 24px);
+      display: flex; flex-direction: column;
+      height: 100dvh;
+      position: relative; z-index: 1;
     }
 
-    /* ── Phase strip ── */
-    .strip { display:flex; gap:4px; margin-bottom:6px; flex-shrink:0; }
+    /* ── Top bar: strip + settings gear ── */
+    .top-bar {
+      display: flex; align-items: center; gap: 16px;
+      padding: 16px 0 8px;
+      flex-shrink: 0;
+    }
+
+    .strip { display: flex; gap: 4px; flex: 1; }
     .strip i {
-      flex:1; height:3px; border-radius:2px;
+      flex: 1; height: 3px; border-radius: 2px;
       background: var(--line); transition: all 0.5s;
-      font-style:normal;
+      font-style: normal;
     }
-    .strip i.on  { background:var(--a); box-shadow: 0 0 10px var(--a-glow); }
-    .strip i.done { background:var(--t3); }
+    .strip i.on  { background: var(--a); box-shadow: 0 0 12px var(--a-glow); }
+    .strip i.done { background: var(--t3); }
 
-    /* ═══════════════════════════════════
-       THE RING — the hero, the signature
-       ═══════════════════════════════════ */
+    .gear-btn {
+      width: 40px; height: 40px;
+      min-width: 44px; min-height: 44px;
+      border: none; border-radius: 50%;
+      background: var(--surface);
+      color: var(--t3);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    .gear-btn:hover { background: rgba(255,255,255,0.08); color: var(--t2); }
+    .gear-btn:active { transform: scale(0.92); }
+    .gear-btn svg { width: 20px; height: 20px; }
+    .gear-btn.hide { opacity: 0; pointer-events: none; }
+
+    /* ── Progress bar (replaces ring on mobile) ── */
+    .progress-track {
+      width: 100%;
+      height: 4px;
+      background: var(--line);
+      border-radius: 2px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 100%;
+      background: var(--a);
+      border-radius: 2px;
+      transition: width 0.4s linear, background 0.6s;
+      box-shadow: 0 0 12px var(--a-glow);
+      transform-origin: left;
+    }
+
+    /* ── Hero: the timer display ── */
     .hero {
       flex: 1;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       min-height: 0;
-      position: relative;
-    }
-
-    .ring-wrap {
-      position: relative;
-      width: var(--ring-size); height: var(--ring-size);
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 16px;
-    }
-
-    .ring-svg {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%;
-      transform: rotate(-90deg);
-    }
-
-    .ring-track {
-      fill: none;
-      stroke: var(--line);
-      stroke-width: 4;
-    }
-
-    .ring-progress {
-      fill: none;
-      stroke: var(--a);
-      stroke-width: 5;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.4s linear, stroke 0.6s;
-      filter: drop-shadow(0 0 8px var(--a-glow));
-    }
-
-    /* Center content inside ring */
-    .ring-content {
-      position: relative; z-index: 2;
-      text-align: center;
+      gap: 8px;
     }
 
     .phase-label {
-      font-family: 'Manrope', sans-serif;
-      font-size: 0.72rem; font-weight: 800;
-      letter-spacing: 0.18em; text-transform: uppercase;
+      font-size: 0.82rem; font-weight: 800;
+      letter-spacing: 0.2em; text-transform: uppercase;
       color: var(--a);
       transition: color 0.6s;
-      margin-bottom: 2px;
     }
 
     .mode-label {
-      font-size: 0.68rem; font-weight: 600;
-      letter-spacing: 0.06em; text-transform: uppercase;
+      font-size: 0.72rem; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
       color: var(--t2);
-      min-height: 1em;
-      margin-bottom: 6px;
+      min-height: 1.2em;
     }
 
     .countdown {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 5.5rem;
+      font-size: 7.5rem;
       line-height: 0.85;
       color: var(--t1);
-      letter-spacing: 0.02em;
+      letter-spacing: 0.04em;
+      font-variant-numeric: tabular-nums;
     }
 
     .speed-line {
-      display: flex; align-items: baseline; gap: 6px;
-      margin-top: 6px;
+      display: flex; align-items: baseline; gap: 8px;
     }
 
     .speed-v {
-      font-family: 'DM Mono', monospace;
-      font-size: 1.8rem; font-weight: 500;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.8rem;
+      line-height: 1;
       color: var(--a);
       transition: color 0.6s;
+      font-variant-numeric: tabular-nums;
     }
 
     .speed-u {
-      font-size: 0.7rem; font-weight: 500;
+      font-size: 0.72rem; font-weight: 600;
       color: var(--t3);
-      letter-spacing: 0.04em;
+      letter-spacing: 0.06em;
     }
 
-    /* Below ring */
     .meta {
-      text-align: center;
       font-size: 0.72rem; font-weight: 600;
       color: var(--t3);
       letter-spacing: 0.04em;
@@ -205,124 +208,161 @@
     .meta b { color: var(--t2); }
 
     .next-pill {
-      margin-top: 10px;
       display: none;
       align-items: center; gap: 8px;
-      padding: 7px 14px;
+      padding: 8px 16px;
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: 100px;
-      font-size: 0.7rem; font-weight: 600;
+      font-size: 0.72rem; font-weight: 600;
       color: var(--t3);
     }
     .next-pill.show { display: inline-flex; }
     .next-pill b { color: var(--t2); }
-    .next-arrow { color: var(--t3); font-size: 0.6rem; }
 
-    /* ═════════════
-       CONTROLS
-       ═════════════ */
+    /* ── Idle breathing animation ── */
+    .countdown.idle-breathe {
+      animation: breathe 3s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    /* ── Controls ── */
     .ctrls {
       flex-shrink: 0;
-      display: flex; flex-direction: column; gap: 8px;
-      padding-top: 6px;
+      display: flex; gap: 8px;
+      padding: 16px 0 8px;
     }
 
     .btn-go {
-      width: 100%; height: 60px;
-      border: none; border-radius: 14px;
+      flex: 1; height: 56px;
+      border: none; border-radius: 16px;
       font-family: 'Manrope', sans-serif;
-      font-size: 1rem; font-weight: 800;
-      letter-spacing: 0.05em; text-transform: uppercase;
+      font-size: 0.9rem; font-weight: 800;
+      letter-spacing: 0.06em; text-transform: uppercase;
       cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
       -webkit-tap-highlight-color: transparent;
       background: var(--a); color: var(--bg);
-      box-shadow: 0 8px 30px var(--a-glow);
+      box-shadow: 0 8px 32px var(--a-glow);
       transition: all 0.3s;
     }
     .btn-go:active { transform: scale(0.97); }
-    .btn-go:hover { filter: brightness(1.08); }
-    .btn-go svg { width: 20px; height: 20px; }
+    .btn-go svg { width: 18px; height: 18px; }
 
     .btn-reset {
-      width: 100%; height: 40px;
-      border: 1px solid var(--line); border-radius: 10px;
+      width: 56px; height: 56px;
+      border: 1px solid var(--line); border-radius: 16px;
       background: transparent; color: var(--t3);
-      font-family: 'Manrope', sans-serif;
-      font-size: 0.78rem; font-weight: 600;
-      letter-spacing: 0.04em; text-transform: uppercase;
       cursor: pointer;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
+      display: none; align-items: center; justify-content: center;
       transition: all 0.2s;
       -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
     }
+    .btn-reset.show { display: flex; }
     .btn-reset:hover { background: var(--surface); color: var(--t2); }
-    .btn-reset:active { transform: scale(0.97); }
-    .btn-reset svg { width: 16px; height: 16px; }
+    .btn-reset:active { transform: scale(0.92); }
+    .btn-reset svg { width: 18px; height: 18px; }
 
-    /* ═════════════
-       SETTINGS
-       ═════════════ */
-    .settings {
-      margin-top: 10px;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      overflow: hidden;
+    /* ════════════════════════════
+       BOTTOM SHEET SETTINGS
+       ════════════════════════════ */
+    .sheet-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+
+    .sheet {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 110;
+      background: #131318;
+      border-radius: 20px 20px 0 0;
+      max-height: 80dvh;
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+      display: flex; flex-direction: column;
+      padding-bottom: env(safe-area-inset-bottom, 16px);
+    }
+    .sheet.open { transform: translateY(0); }
+
+    .sheet-handle {
+      width: 36px; height: 4px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 2px;
+      margin: 10px auto 8px;
+      flex-shrink: 0;
+    }
+
+    .sheet-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px 12px;
+      flex-shrink: 0;
+    }
+
+    .sheet-title {
+      font-size: 1rem; font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .sheet-close {
+      width: 32px; height: 32px;
+      min-width: 44px; min-height: 44px;
+      border: none; border-radius: 50%;
       background: var(--surface);
-      transition: all 0.4s;
+      color: var(--t2);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      -webkit-tap-highlight-color: transparent;
     }
-    .settings.collapsed {
-      max-height: 0 !important; opacity: 0;
-      margin: 0; border: none; pointer-events: none;
-    }
+    .sheet-close:active { transform: scale(0.9); }
+    .sheet-close svg { width: 16px; height: 16px; }
 
-    .settings-hdr {
-      padding: 10px 16px 8px;
-      font-size: 0.6rem; font-weight: 800;
-      letter-spacing: 0.14em; text-transform: uppercase;
-      color: var(--t3);
-      border-bottom: 1px solid var(--line);
-    }
-
-    .settings-body {
-      overflow-y: auto; max-height: 45vh;
+    .sheet-body {
+      overflow-y: auto;
       -webkit-overflow-scrolling: touch;
+      padding: 0 24px;
     }
 
     .sg {
-      padding: 8px 16px 10px;
+      padding: 16px 0;
       border-bottom: 1px solid var(--line);
     }
     .sg:last-child { border-bottom: none; }
 
     .sg-t {
-      font-size: 0.58rem; font-weight: 800;
-      letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--t3); margin-bottom: 2px;
-      display: flex; align-items: center; gap: 6px;
+      font-size: 0.68rem; font-weight: 800;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--t3); margin-bottom: 8px;
+      display: flex; align-items: center; gap: 8px;
     }
     .sg-t i {
-      width: 6px; height: 6px; border-radius: 50%;
+      width: 8px; height: 8px; border-radius: 50%;
       display: inline-block; font-style: normal;
     }
 
     .sr {
       display: flex; align-items: center;
       justify-content: space-between;
-      height: 36px;
+      height: 48px;
     }
-    .sr-l { font-size: 0.78rem; font-weight: 500; color: var(--t2); }
+    .sr-l { font-size: 0.85rem; font-weight: 500; color: var(--t2); }
 
-    .sr-c { display: flex; align-items: center; gap: 2px; }
+    .sr-c { display: flex; align-items: center; gap: 4px; }
 
     .sr-c button {
-      width: 36px; height: 36px;
-      min-width: 44px; min-height: 44px;
+      width: 44px; height: 44px;
       border: 1px solid var(--line);
       background: transparent;
-      color: var(--t2); border-radius: 8px;
-      font-size: 1.1rem; font-weight: 600;
+      color: var(--t2); border-radius: 12px;
+      font-size: 1.2rem; font-weight: 500;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: all 0.15s;
@@ -332,68 +372,82 @@
     .sr-c button:active { transform: scale(0.9); }
 
     .sr-v {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.8rem; font-weight: 500;
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.88rem; font-weight: 700;
       color: var(--t1);
-      min-width: 38px; text-align: center;
+      min-width: 48px; text-align: center;
+      font-variant-numeric: tabular-nums;
     }
 
-    /* ═════════════
-       DONE
-       ═════════════ */
-    .done {
-      position:fixed; inset:0; z-index:50;
-      display:flex; flex-direction:column;
-      align-items:center; justify-content:center;
+    /* ════════════════
+       DONE SCREEN
+       ════════════════ */
+    .done-screen {
+      position: fixed; inset: 0; z-index: 50;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
       background: var(--bg);
-      opacity:0; pointer-events:none;
+      opacity: 0; pointer-events: none;
       transition: opacity 0.6s;
+      padding: 24px;
     }
-    .done.on { opacity:1; pointer-events:auto; }
+    .done-screen.on { opacity: 1; pointer-events: auto; }
 
-    .done-ring {
-      width: 120px; height: 120px;
+    .done-check {
+      width: 80px; height: 80px;
       border-radius: 50%;
       border: 3px solid var(--done-c);
       display: flex; align-items: center; justify-content: center;
-      margin-bottom: 24px;
-      box-shadow: 0 0 50px rgba(52,211,153,0.15), inset 0 0 30px rgba(52,211,153,0.05);
+      margin-bottom: 32px;
+      box-shadow: 0 0 60px rgba(52,211,153,0.2);
     }
-    .done-ring svg { width: 48px; height: 48px; color: var(--done-c); }
+    .done-check svg { width: 36px; height: 36px; color: var(--done-c); }
 
     .done-h {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 2.4rem; letter-spacing: 0.06em;
-      margin-bottom: 4px;
+      font-size: 2.8rem; letter-spacing: 0.06em;
+      margin-bottom: 8px;
     }
-    .done-p { font-size: 0.9rem; color: var(--t2); margin-bottom: 32px; }
+    .done-p { font-size: 0.88rem; color: var(--t2); margin-bottom: 40px; }
 
-    .done-stats { display:flex; gap:40px; margin-bottom:36px; }
-    .done-stat { text-align:center; }
+    .done-stats { display: flex; gap: 48px; margin-bottom: 48px; }
+    .done-stat { text-align: center; }
     .done-stat-v {
-      font-family: 'DM Mono', monospace;
-      font-size: 1.4rem; font-weight: 500; color: var(--done-c);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem; color: var(--done-c);
+      font-variant-numeric: tabular-nums;
     }
     .done-stat-l {
-      font-size: 0.62rem; font-weight: 700; color: var(--t3);
+      font-size: 0.68rem; font-weight: 700; color: var(--t3);
       text-transform: uppercase; letter-spacing: 0.1em;
+      margin-top: 4px;
     }
 
-    /* ═════════════
-       RESPONSIVE
-       ═════════════ */
-    @media (max-height: 680px) {
-      :root { --ring-size: min(60vw, 240px); }
-      .countdown { font-size: 4.2rem; }
-      .speed-v { font-size: 1.5rem; }
-      .btn-go { height: 54px; }
+    .done-btn {
+      height: 56px; padding: 0 48px;
+      border: none; border-radius: 16px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.9rem; font-weight: 800;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer;
+      background: var(--done-c); color: var(--bg);
+      -webkit-tap-highlight-color: transparent;
     }
-    @media (max-height: 560px) {
-      :root { --ring-size: min(50vw, 200px); }
-      .countdown { font-size: 3.5rem; }
-      .speed-v { font-size: 1.3rem; }
-      .btn-go { height: 48px; font-size: 0.85rem; }
-      .strip { margin-bottom: 4px; }
+    .done-btn:active { transform: scale(0.97); }
+
+    /* ════════════════
+       RESPONSIVE
+       ════════════════ */
+    @media (max-height: 640px) {
+      .countdown { font-size: 6rem; }
+      .speed-v { font-size: 2.2rem; }
+      .hero { gap: 4px; }
+    }
+    @media (max-height: 540px) {
+      .countdown { font-size: 5rem; }
+      .speed-v { font-size: 1.8rem; }
+      .ctrls { padding: 8px 0; }
+      .btn-go, .btn-reset { height: 48px; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -408,79 +462,89 @@
   <div class="glow"></div>
 
   <div class="app">
-    <div class="strip">
-      <i id="s-w"></i><i id="s-t"></i><i id="s-c"></i>
+    <!-- Top bar -->
+    <div class="top-bar">
+      <div class="strip">
+        <i id="s-w"></i><i id="s-t"></i><i id="s-c"></i>
+      </div>
+      <button class="gear-btn" id="gearBtn" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
     </div>
 
-    <div class="hero">
-      <div class="ring-wrap">
-        <svg class="ring-svg" viewBox="0 0 200 200">
-          <circle class="ring-track" cx="100" cy="100" r="92"/>
-          <circle class="ring-progress" id="ring" cx="100" cy="100" r="92"
-            stroke-dasharray="578.05" stroke-dashoffset="0"/>
-        </svg>
-        <div class="ring-content">
-          <div class="phase-label" id="phaseName">Warm Up</div>
-          <div class="mode-label" id="modeName">&nbsp;</div>
-          <div class="countdown" id="countdown">02:00</div>
-          <div class="speed-line">
-            <span class="speed-v" id="speedNum">6.0</span>
-            <span class="speed-u">km/h</span>
-          </div>
-        </div>
-      </div>
+    <!-- Progress bar -->
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
 
+    <!-- Hero timer -->
+    <div class="hero">
+      <div class="phase-label" id="phaseName">Warm Up</div>
+      <div class="mode-label" id="modeName">&nbsp;</div>
+      <div class="countdown idle-breathe" id="countdown">02:00</div>
+      <div class="speed-line">
+        <span class="speed-v" id="speedNum">6.0</span>
+        <span class="speed-u">km/h</span>
+      </div>
       <div class="meta" id="cycleTag" style="display:none">
         Cycle <b id="cyNow">1</b> / <b id="cyTotal">6</b>
       </div>
-
       <div class="next-pill" id="nextUp">
-        <span class="next-arrow">&rarr;</span>
+        <span style="color:var(--t3);">&rarr;</span>
         <span>Next</span>
         <b id="nextName">--</b>
         <span id="nextSpeed">--</span>
       </div>
     </div>
 
+    <!-- Controls -->
     <div class="ctrls">
       <button class="btn-go" id="btnGo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Start
       </button>
-      <button class="btn-reset" id="btnReset" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-        Reset
+      <button class="btn-reset" id="btnReset" aria-label="Reset">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
       </button>
     </div>
+  </div>
 
-    <div class="settings" id="settings">
-      <div class="settings-hdr">Configure</div>
-      <div class="settings-body">
-        <div class="sg">
-          <div class="sg-t"><i style="background:var(--warmup)"></i> Warm Up</div>
-          <div class="sr"><span class="sr-l">Speed</span><div class="sr-c"><button onclick="adj('warmupSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-wS">6.0</span><button onclick="adj('warmupSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
-          <div class="sr"><span class="sr-l">Duration</span><div class="sr-c"><button onclick="adj('warmupTime',-30)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-wT">2:00</span><button onclick="adj('warmupTime',30)" aria-label="Increase">&plus;</button></div></div>
-        </div>
-        <div class="sg">
-          <div class="sg-t"><i style="background:var(--sprint)"></i> Training</div>
-          <div class="sr"><span class="sr-l">Sprint Speed</span><div class="sr-c"><button onclick="adj('fastSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-fS">12.0</span><button onclick="adj('fastSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
-          <div class="sr"><span class="sr-l">Sprint Duration</span><div class="sr-c"><button onclick="adj('fastTime',-10)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-fT">0:30</span><button onclick="adj('fastTime',10)" aria-label="Increase">&plus;</button></div></div>
-          <div class="sr"><span class="sr-l">Recovery Speed</span><div class="sr-c"><button onclick="adj('slowSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-sS">7.0</span><button onclick="adj('slowSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
-          <div class="sr"><span class="sr-l">Recovery Duration</span><div class="sr-c"><button onclick="adj('slowTime',-10)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-sT">1:00</span><button onclick="adj('slowTime',10)" aria-label="Increase">&plus;</button></div></div>
-          <div class="sr"><span class="sr-l">Cycles</span><div class="sr-c"><button onclick="adj('cycles',-1)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-cy">6</span><button onclick="adj('cycles',1)" aria-label="Increase">&plus;</button></div></div>
-        </div>
-        <div class="sg">
-          <div class="sg-t"><i style="background:var(--cool)"></i> Cool Down</div>
-          <div class="sr"><span class="sr-l">Speed</span><div class="sr-c"><button onclick="adj('cooldownSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-cS">5.0</span><button onclick="adj('cooldownSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
-          <div class="sr"><span class="sr-l">Duration</span><div class="sr-c"><button onclick="adj('cooldownTime',-30)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-cT">3:00</span><button onclick="adj('cooldownTime',30)" aria-label="Increase">&plus;</button></div></div>
-        </div>
+  <!-- Bottom sheet settings -->
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-hdr">
+      <span class="sheet-title">Settings</span>
+      <button class="sheet-close" id="sheetClose" aria-label="Close settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="sg">
+        <div class="sg-t"><i style="background:var(--warmup)"></i> Warm Up</div>
+        <div class="sr"><span class="sr-l">Speed</span><div class="sr-c"><button onclick="adj('warmupSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-wS">6.0</span><button onclick="adj('warmupSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Duration</span><div class="sr-c"><button onclick="adj('warmupTime',-30)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-wT">2:00</span><button onclick="adj('warmupTime',30)" aria-label="Increase">&plus;</button></div></div>
+      </div>
+      <div class="sg">
+        <div class="sg-t"><i style="background:var(--sprint)"></i> Training</div>
+        <div class="sr"><span class="sr-l">Sprint Speed</span><div class="sr-c"><button onclick="adj('fastSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-fS">12.0</span><button onclick="adj('fastSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Sprint Time</span><div class="sr-c"><button onclick="adj('fastTime',-10)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-fT">0:30</span><button onclick="adj('fastTime',10)" aria-label="Increase">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Recovery Speed</span><div class="sr-c"><button onclick="adj('slowSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-sS">7.0</span><button onclick="adj('slowSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Recovery Time</span><div class="sr-c"><button onclick="adj('slowTime',-10)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-sT">1:00</span><button onclick="adj('slowTime',10)" aria-label="Increase">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Cycles</span><div class="sr-c"><button onclick="adj('cycles',-1)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-cy">6</span><button onclick="adj('cycles',1)" aria-label="Increase">&plus;</button></div></div>
+      </div>
+      <div class="sg">
+        <div class="sg-t"><i style="background:var(--cool)"></i> Cool Down</div>
+        <div class="sr"><span class="sr-l">Speed</span><div class="sr-c"><button onclick="adj('cooldownSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-cS">5.0</span><button onclick="adj('cooldownSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Duration</span><div class="sr-c"><button onclick="adj('cooldownTime',-30)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-cT">3:00</span><button onclick="adj('cooldownTime',30)" aria-label="Increase">&plus;</button></div></div>
       </div>
     </div>
   </div>
 
-  <div class="done" id="doneScreen">
-    <div class="done-ring">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <!-- Done screen -->
+  <div class="done-screen" id="doneScreen">
+    <div class="done-check">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
     <div class="done-h">WORKOUT COMPLETE</div>
     <div class="done-p">You showed up. That's what matters.</div>
@@ -488,14 +552,10 @@
       <div class="done-stat"><div class="done-stat-v" id="statTime">--:--</div><div class="done-stat-l">Duration</div></div>
       <div class="done-stat"><div class="done-stat-v" id="statCy">--</div><div class="done-stat-l">Cycles</div></div>
     </div>
-    <button class="btn-go" onclick="fullReset()" style="width:200px;height:50px;font-size:0.85rem;">
-      Go Again
-    </button>
+    <button class="done-btn" onclick="fullReset()">Go Again</button>
   </div>
 
 <script>
-const CIRC = 2 * Math.PI * 92; // ~578.05
-
 const S = {
   warmupSpeed:6, warmupTime:120,
   fastSpeed:12, fastTime:30,
@@ -521,41 +581,41 @@ function stopAudio(){ nodes.forEach(n=>{try{n.stop()}catch(e){}}); nodes=[]; }
 
 function sndFast(){
   stopAudio(); const c=getAC(), n=c.currentTime;
-  let t=n; const dur=5, on=0.07, gap=0.05;
+  let t=n; const dur=5, onT=0.07, gap=0.05;
   while(t<n+dur){
     const o=c.createOscillator(), g=c.createGain();
     o.type='square'; o.frequency.value=880;
     g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.26,t+0.008);
-    g.gain.setValueAtTime(0.26,t+on-0.008); g.gain.linearRampToValueAtTime(0,t+on);
-    o.connect(g).connect(c.destination); o.start(t); o.stop(t+on+0.01); nodes.push(o);
-    t+=on+gap;
+    g.gain.setValueAtTime(0.26,t+onT-0.008); g.gain.linearRampToValueAtTime(0,t+onT);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+onT+0.01); nodes.push(o);
+    t+=onT+gap;
   }
 }
 
 function sndSlow(){
   stopAudio(); const c=getAC(), n=c.currentTime;
-  let t=n; const dur=5, on=0.30, gap=0.20;
+  let t=n; const dur=5, onT=0.30, gap=0.20;
   while(t<n+dur){
     const o=c.createOscillator(), g=c.createGain();
     o.type='sine'; o.frequency.value=440;
     g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.22,t+0.02);
-    g.gain.setValueAtTime(0.22,t+on-0.03); g.gain.linearRampToValueAtTime(0,t+on);
-    o.connect(g).connect(c.destination); o.start(t); o.stop(t+on+0.01); nodes.push(o);
-    t+=on+gap;
+    g.gain.setValueAtTime(0.22,t+onT-0.03); g.gain.linearRampToValueAtTime(0,t+onT);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+onT+0.01); nodes.push(o);
+    t+=onT+gap;
   }
 }
 
 function sndWarmup(){
   stopAudio(); const c=getAC(), n=c.currentTime;
   const notes=[392,440,523.25,587.33,659.25];
-  let t=n, i=0; const dur=5, on=0.4, gap=0.15;
+  let t=n, i=0; const dur=5, onT=0.4, gap=0.15;
   while(t<n+dur){
     const o=c.createOscillator(), g=c.createGain();
     o.type='triangle'; o.frequency.value=notes[i%notes.length];
     g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.2,t+0.02);
-    g.gain.setValueAtTime(0.2,t+on-0.04); g.gain.linearRampToValueAtTime(0,t+on);
-    o.connect(g).connect(c.destination); o.start(t); o.stop(t+on+0.01); nodes.push(o);
-    t+=on+gap; i++;
+    g.gain.setValueAtTime(0.2,t+onT-0.04); g.gain.linearRampToValueAtTime(0,t+onT);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+onT+0.01); nodes.push(o);
+    t+=onT+gap; i++;
   }
 }
 
@@ -588,14 +648,14 @@ function sndCooldown(){
 function sndDone(){
   stopAudio(); const c=getAC(), n=c.currentTime;
   const mel=[523.25,659.25,783.99,1046.5];
-  let t=n, i=0; const dur=5, on=0.32, gap=0.1;
+  let t=n, i=0; const dur=5, onT=0.32, gap=0.1;
   while(t<n+dur){
     const o=c.createOscillator(), g=c.createGain();
     o.type='sine'; o.frequency.value=mel[i%mel.length];
     g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.25,t+0.02);
-    g.gain.setValueAtTime(0.25,t+on-0.04); g.gain.linearRampToValueAtTime(0,t+on);
-    o.connect(g).connect(c.destination); o.start(t); o.stop(t+on+0.01); nodes.push(o);
-    t+=on+gap; i++;
+    g.gain.setValueAtTime(0.25,t+onT-0.04); g.gain.linearRampToValueAtTime(0,t+onT);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+onT+0.01); nodes.push(o);
+    t+=onT+gap; i++;
   }
 }
 
@@ -627,7 +687,7 @@ const TH={
   fast()    { rs.setProperty('--a','var(--sprint)');   rs.setProperty('--a-bg','var(--sprint-bg)');  rs.setProperty('--a-glow','var(--sprint-glow)'); },
   slow()    { rs.setProperty('--a','var(--recover)');  rs.setProperty('--a-bg','var(--recover-bg)'); rs.setProperty('--a-glow','var(--recover-glow)'); },
   cooldown(){ rs.setProperty('--a','var(--cool)');     rs.setProperty('--a-bg','var(--cool-bg)');    rs.setProperty('--a-glow','var(--cool-glow)'); },
-  done()    { rs.setProperty('--a','var(--done-c)');   rs.setProperty('--a-bg','var(--bg)');         rs.setProperty('--a-glow','rgba(52,211,153,0.12)'); },
+  done()    { rs.setProperty('--a','var(--done-c)');   rs.setProperty('--a-bg','var(--bg)');         rs.setProperty('--a-glow','rgba(52,211,153,0.25)'); },
   idle()    { rs.setProperty('--a','var(--warmup)');   rs.setProperty('--a-bg','var(--bg)');         rs.setProperty('--a-glow','var(--warmup-glow)'); },
 };
 const PC={ warmup:'#f0a830', fast:'#ff4d4d', slow:'#4da6ff', cooldown:'#00d4aa', done:'#34d399' };
@@ -647,11 +707,34 @@ function updStrip(){
   else if(phase==='done'){ w.className='done'; t.className='done'; c.className='done'; }
 }
 
-// ── Ring ──
-function setRing(pct){
-  const offset = CIRC * (1 - pct);
-  $('ring').style.strokeDashoffset = offset;
+// ── Progress bar ──
+function setProgress(pct){
+  $('progressFill').style.width = (pct * 100) + '%';
 }
+
+// ── Bottom sheet ──
+function openSheet(){
+  $('sheetBackdrop').classList.add('open');
+  $('sheet').classList.add('open');
+}
+function closeSheet(){
+  $('sheetBackdrop').classList.remove('open');
+  $('sheet').classList.remove('open');
+}
+
+$('gearBtn').addEventListener('click', openSheet);
+$('sheetBackdrop').addEventListener('click', closeSheet);
+$('sheetClose').addEventListener('click', closeSheet);
+
+// Swipe down to dismiss
+let sheetStartY=0;
+$('sheet').addEventListener('touchstart', e=>{
+  sheetStartY = e.touches[0].clientY;
+}, {passive:true});
+$('sheet').addEventListener('touchend', e=>{
+  const dy = e.changedTouches[0].clientY - sheetStartY;
+  if(dy > 60) closeSheet();
+}, {passive:true});
 
 // ── Settings ──
 function adj(k,d){
@@ -677,7 +760,7 @@ function renderS(){
 function renderIdle(){
   $('countdown').textContent=fmtB(S.warmupTime);
   $('speedNum').textContent=S.warmupSpeed.toFixed(1);
-  setRing(1);
+  setProgress(1);
 }
 
 // ── Next up ──
@@ -700,6 +783,7 @@ function showNext(){
 // ── Render ──
 function render(){
   $('countdown').textContent=fmtB(timeLeft);
+  $('countdown').classList.remove('idle-breathe');
   let spd=0, pN='', mN='', showCy=false;
   switch(phase){
     case 'warmup':   spd=S.warmupSpeed; pN='Warm Up';   TH.warmup(); break;
@@ -713,7 +797,7 @@ function render(){
   if(showCy){ $('cycleTag').style.display='block'; $('cyNow').textContent=cy; $('cyTotal').textContent=S.cycles; }
   else { $('cycleTag').style.display='none'; }
   const pct=totalT>0? timeLeft/totalT : 1;
-  setRing(pct);
+  setProgress(pct);
   updStrip(); showNext();
 }
 
@@ -760,8 +844,9 @@ function start(){
   getAC();
   if(phase==='idle'||phase==='done'){
     t0=Date.now(); on=true; go('warmup');
-    $('settings').classList.add('collapsed');
-    $('btnReset').style.display='';
+    $('gearBtn').classList.add('hide');
+    $('btnReset').classList.add('show');
+    closeSheet();
   } else { on=true; }
   b.innerHTML=ico.pause+' Pause';
   clearInterval(tick); tick=setInterval(tickFn,1000);
@@ -770,14 +855,15 @@ function start(){
 function reset(){
   on=false; clearInterval(tick); stopAudio();
   phase='idle'; timeLeft=totalT=cy=0;
-  $('settings').classList.remove('collapsed');
-  $('btnReset').style.display='none';
+  $('gearBtn').classList.remove('hide');
+  $('btnReset').classList.remove('show');
   $('btnGo').innerHTML=ico.play+' Start';
   $('phaseName').textContent='Warm Up';
   $('modeName').textContent='\u00A0';
   $('cycleTag').style.display='none';
   $('pulse').classList.remove('on');
   $('nextUp').classList.remove('show');
+  $('countdown').classList.add('idle-breathe');
   TH.idle(); updStrip(); renderIdle();
 }
 
