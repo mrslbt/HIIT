@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>HIIT Runner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-secondary: #111827;
+      --bg-card: rgba(17, 24, 39, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+
+      /* Phase colors */
+      --warmup: #f59e0b;
+      --warmup-glow: rgba(245, 158, 11, 0.25);
+      --warmup-bg: rgba(245, 158, 11, 0.08);
+
+      --fast: #ef4444;
+      --fast-glow: rgba(239, 68, 68, 0.3);
+      --fast-bg: rgba(239, 68, 68, 0.08);
+
+      --slow: #3b82f6;
+      --slow-glow: rgba(59, 130, 246, 0.25);
+      --slow-bg: rgba(59, 130, 246, 0.08);
+
+      --cooldown: #06b6d4;
+      --cooldown-glow: rgba(6, 182, 212, 0.25);
+      --cooldown-bg: rgba(6, 182, 212, 0.08);
+
+      --done: #10b981;
+      --done-glow: rgba(16, 185, 129, 0.25);
+
+      --accent: var(--warmup);
+      --accent-glow: var(--warmup-glow);
+      --accent-bg: var(--warmup-bg);
+
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Ambient background pulse ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 30%, var(--accent-glow), transparent 70%);
+      pointer-events: none;
+      transition: background 1.2s ease;
+      z-index: 0;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+      padding: 20px 16px 24px;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .header h1 span {
+      color: var(--accent);
+      transition: color 0.6s ease;
+    }
+
+    /* ── Phase indicator strip ── */
+    .phase-strip {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    .phase-strip-item {
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border-subtle);
+      position: relative;
+      overflow: hidden;
+      transition: background 0.4s;
+    }
+
+    .phase-strip-item.active {
+      background: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .phase-strip-item.completed {
+      background: var(--text-muted);
+    }
+
+    /* ── Main timer display ── */
+    .timer-display {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 28px 20px 24px;
+      text-align: center;
+      backdrop-filter: blur(20px);
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .timer-display::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--accent);
+      transition: background 0.6s ease;
+    }
+
+    .phase-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 4px;
+      transition: color 0.6s ease;
+    }
+
+    .mode-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      min-height: 1em;
+    }
+
+    .time-remaining {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 4.5rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .time-remaining .seconds-frac {
+      font-size: 2rem;
+      color: var(--text-muted);
+      vertical-align: baseline;
+    }
+
+    .speed-display {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .speed-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent);
+      transition: color 0.6s ease;
+    }
+
+    .speed-unit {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .cycle-counter {
+      margin-top: 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .cycle-counter span {
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    /* ── Progress ring (around timer) ── */
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 3px;
+      margin-top: 16px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 3px;
+      transition: width 0.3s linear, background 0.6s ease;
+      width: 100%;
+    }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .btn {
+      flex: 1;
+      height: 52px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0a0e17;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* ── Settings panel ── */
+    .settings {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      backdrop-filter: blur(20px);
+      overflow: hidden;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .settings-header {
+      padding: 14px 20px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .settings-scroll {
+      overflow-y: auto;
+      flex: 1;
+      padding: 4px 0;
+    }
+
+    .setting-group {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .setting-group:last-child {
+      border-bottom: none;
+    }
+
+    .setting-group-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .setting-group-title .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+    }
+
+    .setting-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .setting-control {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .setting-control button {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(255,255,255,0.04);
+      color: var(--text-secondary);
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .setting-control button:hover {
+      background: rgba(255,255,255,0.1);
+      color: var(--text-primary);
+    }
+
+    .setting-control button:active {
+      transform: scale(0.92);
+    }
+
+    .setting-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      min-width: 42px;
+      text-align: center;
+    }
+
+    /* ── Sound notification overlay ── */
+    .sound-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+
+    .sound-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .sound-overlay-content {
+      text-align: center;
+      animation: pulse-in 0.5s ease;
+    }
+
+    @keyframes pulse-in {
+      0% { transform: scale(0.8); opacity: 0; }
+      60% { transform: scale(1.05); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .sound-overlay-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      box-shadow: 0 0 40px var(--accent-glow);
+      animation: ring-pulse 1s ease infinite;
+    }
+
+    @keyframes ring-pulse {
+      0%, 100% { box-shadow: 0 0 40px var(--accent-glow); }
+      50% { box-shadow: 0 0 60px var(--accent-glow), 0 0 80px var(--accent-glow); }
+    }
+
+    .sound-overlay-icon svg {
+      width: 36px;
+      height: 36px;
+      color: #0a0e17;
+    }
+
+    .sound-overlay-text {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .sound-overlay-sub {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    /* ── Completion screen ── */
+    .completion-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-primary);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+    }
+
+    .completion-screen.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .completion-icon {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: var(--done);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      box-shadow: 0 0 60px var(--done-glow);
+    }
+
+    .completion-icon svg {
+      width: 48px;
+      height: 48px;
+      color: #0a0e17;
+    }
+
+    .completion-title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .completion-sub {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    .completion-stats {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 40px;
+    }
+
+    .completion-stat {
+      text-align: center;
+    }
+
+    .completion-stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--done);
+    }
+
+    .completion-stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── Disabled state ── */
+    .settings.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    /* ── Responsive ── */
+    @media (max-height: 700px) {
+      .time-remaining { font-size: 3.5rem; }
+      .timer-display { padding: 20px 16px 16px; }
+      .setting-group { padding: 8px 20px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <div class="header">
+      <h1>HIIT <span>Runner</span></h1>
+    </div>
+
+    <!-- Phase progress strip -->
+    <div class="phase-strip">
+      <div class="phase-strip-item" id="strip-warmup"></div>
+      <div class="phase-strip-item" id="strip-training"></div>
+      <div class="phase-strip-item" id="strip-cooldown"></div>
+    </div>
+
+    <!-- Timer display -->
+    <div class="timer-display">
+      <div class="phase-label" id="phaseLabel">Warm Up</div>
+      <div class="mode-label" id="modeLabel">&nbsp;</div>
+      <div class="time-remaining" id="timeDisplay">02:00</div>
+      <div class="speed-display">
+        <span class="speed-value" id="speedDisplay">6.0</span>
+        <span class="speed-unit">km/h</span>
+      </div>
+      <div class="cycle-counter" id="cycleCounter" style="display:none;">
+        Cycle <span id="currentCycle">1</span> / <span id="totalCycles">6</span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="btn btn-primary" id="btnStart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Start
+      </button>
+      <button class="btn btn-secondary" id="btnReset" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        Reset
+      </button>
+    </div>
+
+    <!-- Settings -->
+    <div class="settings" id="settingsPanel">
+      <div class="settings-header">Settings</div>
+      <div class="settings-scroll">
+        <!-- Warm Up -->
+        <div class="setting-group">
+          <div class="setting-group-title">
+            <span class="dot" style="background: var(--warmup)"></span>
+            Warm Up
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Speed</span>
+            <div class="setting-control">
+              <button onclick="adjustSetting('warmupSpeed', -0.5)" aria-label="Decrease warm up speed">&minus;</button>
+              <span class="setting-value" id="val-warmupSpeed">6.0</span>
+              <button onclick="adjustSetting('warmupSpeed', 0.5)" aria-label="Increase warm up speed">&plus;</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Duration</span>
+            <div class="setting-control">
+              <button onclick="adjustSetting('warmupTime', -30)" aria-label="Decrease warm up time">&minus;</button>
+              <span class="setting-value" id="val-warmupTime">2:00</span>
+              <button onclick="adjustSetting('warmupTime', 30)" aria-label="Increase warm up time">&plus;</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Training -->
+        <div class="setting-group">
+          <div class="setting-group-title">
+            <span class="dot" style="background: var(--fast)"></span>
+            Training
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Fast Speed</span>
+            <div class="setting-control">
+              <button onclick="adjustSetting('fastSpeed', -0.5)" aria-label="Decrease fast speed">&minus;</button>
+              <span class="setting-value" id="val-fastSpeed">12.0</span>
+              <button onclick="adjustSetting('fastSpeed', 0.5)" aria-label="Increase fast speed">&plus;</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Fast Duration</span>
+            <div class="setting-control">
+              <button onclick="adjustSetting('fastTime', -10)" aria-label="Decrease fast time">&minus;</button>
+              <span class="setting-value" id="val-fastTime">0:30</span>
+              <button onclick="adjustSetting('fastTime', 10)" aria-label="Increase fast time">&plus;</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Slow Speed</span>
+            <div class="setting-control">
+              <button onclick="adjustSetting('slowSpeed', -0.5)" aria-label="Decrease slow speed">&minus;</button>
+              <span class="setting-value" id="val-slowSpeed">7.0</span>
+              <button onclick="adjustSetting('slowSpeed', 0.5)" aria-label="Increase slow speed">&plus;</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Slow Duration</span>
+            <div class="setting-control">
+              <button onclick="adjustSetting('slowTime', -10)" aria-label="Decrease slow time">&minus;</button>
+              <span class="setting-value" id="val-slowTime">1:00</span>
+              <button onclick="adjustSetting('slowTime', 10)" aria-label="Increase slow time">&plus;</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Cycles</span>
+            <div class="setting-control">
+              <button onclick="adjustSetting('cycles', -1)" aria-label="Decrease cycles">&minus;</button>
+              <span class="setting-value" id="val-cycles">6</span>
+              <button onclick="adjustSetting('cycles', 1)" aria-label="Increase cycles">&plus;</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cool Down -->
+        <div class="setting-group">
+          <div class="setting-group-title">
+            <span class="dot" style="background: var(--cooldown)"></span>
+            Cool Down
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Speed</span>
+            <div class="setting-control">
+              <button onclick="adjustSetting('cooldownSpeed', -0.5)" aria-label="Decrease cool down speed">&minus;</button>
+              <span class="setting-value" id="val-cooldownSpeed">5.0</span>
+              <button onclick="adjustSetting('cooldownSpeed', 0.5)" aria-label="Increase cool down speed">&plus;</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Duration</span>
+            <div class="setting-control">
+              <button onclick="adjustSetting('cooldownTime', -30)" aria-label="Decrease cool down time">&minus;</button>
+              <span class="setting-value" id="val-cooldownTime">3:00</span>
+              <button onclick="adjustSetting('cooldownTime', 30)" aria-label="Increase cool down time">&plus;</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sound transition overlay -->
+  <div class="sound-overlay" id="soundOverlay">
+    <div class="sound-overlay-content">
+      <div class="sound-overlay-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      </div>
+      <div class="sound-overlay-text" id="overlayText">Get Ready!</div>
+      <div class="sound-overlay-sub" id="overlaySub">Starting warm up</div>
+    </div>
+  </div>
+
+  <!-- Completion screen -->
+  <div class="completion-screen" id="completionScreen">
+    <div class="completion-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="completion-title">Workout Complete</div>
+    <div class="completion-sub">Great job! You crushed it.</div>
+    <div class="completion-stats">
+      <div class="completion-stat">
+        <div class="completion-stat-value" id="statDuration">--:--</div>
+        <div class="completion-stat-label">Total Time</div>
+      </div>
+      <div class="completion-stat">
+        <div class="completion-stat-value" id="statCycles">--</div>
+        <div class="completion-stat-label">Cycles</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="fullReset()" style="width: 200px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+      New Workout
+    </button>
+  </div>
+
+  <script>
+    // ── Settings state ──
+    const settings = {
+      warmupSpeed: 6.0,
+      warmupTime: 120,
+      fastSpeed: 12.0,
+      fastTime: 30,
+      slowSpeed: 7.0,
+      slowTime: 60,
+      cycles: 6,
+      cooldownSpeed: 5.0,
+      cooldownTime: 180,
+    };
+
+    const limits = {
+      warmupSpeed:   { min: 2.0, max: 15.0 },
+      warmupTime:    { min: 30,  max: 600 },
+      fastSpeed:     { min: 5.0, max: 25.0 },
+      fastTime:      { min: 10,  max: 300 },
+      slowSpeed:     { min: 2.0, max: 15.0 },
+      slowTime:      { min: 10,  max: 300 },
+      cycles:        { min: 1,   max: 30 },
+      cooldownSpeed: { min: 2.0, max: 15.0 },
+      cooldownTime:  { min: 30,  max: 600 },
+    };
+
+    // ── Timer state ──
+    let phase = 'idle'; // idle | warmup | fast | slow | cooldown | done
+    let timeLeft = 0;
+    let totalPhaseTime = 0;
+    let currentCycle = 0;
+    let intervalId = null;
+    let isRunning = false;
+    let startTimestamp = null;
+
+    // ── Audio context ──
+    let audioCtx = null;
+
+    function getAudioCtx() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    // ── Sound generators ──
+    // Each transition has a unique sound character
+
+    function playStartSound() {
+      // Ascending cheerful triple beep
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, now + i * 0.3);
+        gain.gain.linearRampToValueAtTime(0.35, now + i * 0.3 + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.3 + 0.4);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now + i * 0.3);
+        osc.stop(now + i * 0.3 + 0.5);
+      });
+    }
+
+    function playWarmupToTrainingSound() {
+      // Energizing rising sweep + beat
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      // Sweep
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(200, now);
+      osc.frequency.exponentialRampToValueAtTime(800, now + 0.8);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.linearRampToValueAtTime(0.3, now + 0.4);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 1.3);
+      // Impact beats
+      for (let i = 0; i < 3; i++) {
+        const osc2 = ctx.createOscillator();
+        const g2 = ctx.createGain();
+        osc2.type = 'square';
+        osc2.frequency.value = 440 * (1 + i * 0.5);
+        g2.gain.setValueAtTime(0, now + 1.0 + i * 0.25);
+        g2.gain.linearRampToValueAtTime(0.25, now + 1.0 + i * 0.25 + 0.02);
+        g2.gain.exponentialRampToValueAtTime(0.001, now + 1.0 + i * 0.25 + 0.3);
+        osc2.connect(g2).connect(ctx.destination);
+        osc2.start(now + 1.0 + i * 0.25);
+        osc2.stop(now + 1.0 + i * 0.25 + 0.35);
+      }
+    }
+
+    function playFastModeSound() {
+      // Urgent double high beep
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      for (let i = 0; i < 2; i++) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0, now + i * 0.15);
+        gain.gain.linearRampToValueAtTime(0.3, now + i * 0.15 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.15 + 0.2);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now + i * 0.15);
+        osc.stop(now + i * 0.15 + 0.25);
+      }
+      // Plus a sustained high tone
+      const osc3 = ctx.createOscillator();
+      const g3 = ctx.createGain();
+      osc3.type = 'sine';
+      osc3.frequency.value = 1046.5; // C6
+      g3.gain.setValueAtTime(0, now + 0.4);
+      g3.gain.linearRampToValueAtTime(0.2, now + 0.5);
+      g3.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+      osc3.connect(g3).connect(ctx.destination);
+      osc3.start(now + 0.4);
+      osc3.stop(now + 1.6);
+    }
+
+    function playSlowModeSound() {
+      // Calming descending tones
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      const notes = [659.25, 523.25, 392.0]; // E5, C5, G4
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, now + i * 0.35);
+        gain.gain.linearRampToValueAtTime(0.25, now + i * 0.35 + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.35 + 0.6);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now + i * 0.35);
+        osc.stop(now + i * 0.35 + 0.7);
+      });
+    }
+
+    function playTrainingToCooldownSound() {
+      // Relieving falling sweep + soft chime
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(250, now + 1.0);
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 1.3);
+      // Soft chime
+      const osc2 = ctx.createOscillator();
+      const g2 = ctx.createGain();
+      osc2.type = 'triangle';
+      osc2.frequency.value = 523.25;
+      g2.gain.setValueAtTime(0, now + 1.0);
+      g2.gain.linearRampToValueAtTime(0.2, now + 1.1);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+      osc2.connect(g2).connect(ctx.destination);
+      osc2.start(now + 1.0);
+      osc2.stop(now + 2.6);
+    }
+
+    function playCompleteSound() {
+      // Triumphant fanfare
+      const ctx = getAudioCtx();
+      const now = ctx.currentTime;
+      const melody = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6
+      melody.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, now + i * 0.2);
+        gain.gain.linearRampToValueAtTime(0.3, now + i * 0.2 + 0.05);
+        gain.gain.setValueAtTime(0.3, now + i * 0.2 + 0.3);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.2 + 0.8);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now + i * 0.2);
+        osc.stop(now + i * 0.2 + 0.9);
+      });
+      // Hold the last note longer with harmony
+      const osc2 = ctx.createOscillator();
+      const g2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.value = 783.99; // G5 harmony
+      g2.gain.setValueAtTime(0, now + 0.8);
+      g2.gain.linearRampToValueAtTime(0.15, now + 0.9);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+      osc2.connect(g2).connect(ctx.destination);
+      osc2.start(now + 0.8);
+      osc2.stop(now + 2.6);
+    }
+
+    // ── Overlay ──
+    let overlayTimeout = null;
+
+    function showOverlay(title, subtitle, duration = 5000) {
+      const overlay = document.getElementById('soundOverlay');
+      document.getElementById('overlayText').textContent = title;
+      document.getElementById('overlaySub').textContent = subtitle;
+      overlay.classList.add('active');
+      if (overlayTimeout) clearTimeout(overlayTimeout);
+
+      // Clear overlay but don't block the timer — it keeps running behind
+      overlayTimeout = setTimeout(() => {
+        overlay.classList.remove('active');
+      }, duration);
+    }
+
+    // ── Theme colors ──
+    function setTheme(accentVar, glowVar, bgVar) {
+      const root = document.documentElement;
+      const s = getComputedStyle(root);
+      root.style.setProperty('--accent', `var(${accentVar})`);
+      root.style.setProperty('--accent-glow', `var(${glowVar})`);
+      root.style.setProperty('--accent-bg', `var(${bgVar})`);
+    }
+
+    function updatePhaseStrip() {
+      const warmup = document.getElementById('strip-warmup');
+      const training = document.getElementById('strip-training');
+      const cooldown = document.getElementById('strip-cooldown');
+      warmup.className = 'phase-strip-item';
+      training.className = 'phase-strip-item';
+      cooldown.className = 'phase-strip-item';
+
+      if (phase === 'warmup') {
+        warmup.classList.add('active');
+      } else if (phase === 'fast' || phase === 'slow') {
+        warmup.classList.add('completed');
+        training.classList.add('active');
+      } else if (phase === 'cooldown') {
+        warmup.classList.add('completed');
+        training.classList.add('completed');
+        cooldown.classList.add('active');
+      } else if (phase === 'done') {
+        warmup.classList.add('completed');
+        training.classList.add('completed');
+        cooldown.classList.add('completed');
+      }
+    }
+
+    // ── Settings adjustment ──
+    function adjustSetting(key, delta) {
+      if (isRunning) return;
+      const lim = limits[key];
+      let val = settings[key] + delta;
+      val = Math.max(lim.min, Math.min(lim.max, val));
+      // Round to avoid floating point issues
+      if (key.includes('Speed')) {
+        val = Math.round(val * 10) / 10;
+      } else {
+        val = Math.round(val);
+      }
+      settings[key] = val;
+      updateSettingsDisplay();
+      updateIdleDisplay();
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    function formatTimerDisplay(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function updateSettingsDisplay() {
+      document.getElementById('val-warmupSpeed').textContent = settings.warmupSpeed.toFixed(1);
+      document.getElementById('val-warmupTime').textContent = formatTime(settings.warmupTime);
+      document.getElementById('val-fastSpeed').textContent = settings.fastSpeed.toFixed(1);
+      document.getElementById('val-fastTime').textContent = formatTime(settings.fastTime);
+      document.getElementById('val-slowSpeed').textContent = settings.slowSpeed.toFixed(1);
+      document.getElementById('val-slowTime').textContent = formatTime(settings.slowTime);
+      document.getElementById('val-cycles').textContent = settings.cycles;
+      document.getElementById('val-cooldownSpeed').textContent = settings.cooldownSpeed.toFixed(1);
+      document.getElementById('val-cooldownTime').textContent = formatTime(settings.cooldownTime);
+    }
+
+    function updateIdleDisplay() {
+      if (phase !== 'idle') return;
+      document.getElementById('timeDisplay').textContent = formatTimerDisplay(settings.warmupTime);
+      document.getElementById('speedDisplay').textContent = settings.warmupSpeed.toFixed(1);
+    }
+
+    // ── Display updates ──
+    function updateDisplay() {
+      const timeEl = document.getElementById('timeDisplay');
+      const speedEl = document.getElementById('speedDisplay');
+      const phaseEl = document.getElementById('phaseLabel');
+      const modeEl = document.getElementById('modeLabel');
+      const cycleEl = document.getElementById('cycleCounter');
+      const progressEl = document.getElementById('progressBar');
+
+      timeEl.textContent = formatTimerDisplay(timeLeft);
+
+      let speed = 0;
+      let phaseName = '';
+      let modeName = '';
+      let showCycles = false;
+
+      switch (phase) {
+        case 'warmup':
+          speed = settings.warmupSpeed;
+          phaseName = 'Warm Up';
+          setTheme('--warmup', '--warmup-glow', '--warmup-bg');
+          break;
+        case 'fast':
+          speed = settings.fastSpeed;
+          phaseName = 'Training';
+          modeName = 'Sprint';
+          showCycles = true;
+          setTheme('--fast', '--fast-glow', '--fast-bg');
+          break;
+        case 'slow':
+          speed = settings.slowSpeed;
+          phaseName = 'Training';
+          modeName = 'Recovery';
+          showCycles = true;
+          setTheme('--slow', '--slow-glow', '--slow-bg');
+          break;
+        case 'cooldown':
+          speed = settings.cooldownSpeed;
+          phaseName = 'Cool Down';
+          setTheme('--cooldown', '--cooldown-glow', '--cooldown-bg');
+          break;
+      }
+
+      speedEl.textContent = speed.toFixed(1);
+      phaseEl.textContent = phaseName;
+      modeEl.textContent = modeName || '\u00A0';
+
+      if (showCycles) {
+        cycleEl.style.display = 'block';
+        document.getElementById('currentCycle').textContent = currentCycle;
+        document.getElementById('totalCycles').textContent = settings.cycles;
+      } else {
+        cycleEl.style.display = 'none';
+      }
+
+      // Progress bar
+      const pct = totalPhaseTime > 0 ? (timeLeft / totalPhaseTime) * 100 : 100;
+      progressEl.style.width = pct + '%';
+
+      updatePhaseStrip();
+    }
+
+    // ── Phase transitions ──
+    function startPhase(newPhase) {
+      phase = newPhase;
+
+      switch (newPhase) {
+        case 'warmup':
+          timeLeft = settings.warmupTime;
+          totalPhaseTime = settings.warmupTime;
+          currentCycle = 0;
+          playStartSound();
+          showOverlay('Get Ready!', 'Warm up starting');
+          break;
+        case 'fast':
+          currentCycle++;
+          timeLeft = settings.fastTime;
+          totalPhaseTime = settings.fastTime;
+          if (currentCycle === 1) {
+            playWarmupToTrainingSound();
+            showOverlay('Training Start!', `Sprint — Cycle ${currentCycle}/${settings.cycles}`);
+          } else {
+            playFastModeSound();
+            showOverlay('Sprint!', `Cycle ${currentCycle}/${settings.cycles} — Speed up!`);
+          }
+          break;
+        case 'slow':
+          timeLeft = settings.slowTime;
+          totalPhaseTime = settings.slowTime;
+          playSlowModeSound();
+          showOverlay('Recovery', `Cycle ${currentCycle}/${settings.cycles} — Slow down`);
+          break;
+        case 'cooldown':
+          timeLeft = settings.cooldownTime;
+          totalPhaseTime = settings.cooldownTime;
+          playTrainingToCooldownSound();
+          showOverlay('Cool Down', 'Almost done — slow it down');
+          break;
+        case 'done':
+          finishWorkout();
+          return;
+      }
+
+      updateDisplay();
+    }
+
+    function nextPhase() {
+      switch (phase) {
+        case 'warmup':
+          startPhase('fast');
+          break;
+        case 'fast':
+          startPhase('slow');
+          break;
+        case 'slow':
+          if (currentCycle >= settings.cycles) {
+            startPhase('cooldown');
+          } else {
+            startPhase('fast');
+          }
+          break;
+        case 'cooldown':
+          startPhase('done');
+          break;
+      }
+    }
+
+    // ── Timer tick ──
+    function tick() {
+      if (!isRunning) return;
+
+      timeLeft--;
+      if (timeLeft <= 0) {
+        nextPhase();
+      } else {
+        updateDisplay();
+      }
+    }
+
+    // ── Start / Stop ──
+    function startTimer() {
+      if (isRunning) {
+        // Pause
+        isRunning = false;
+        clearInterval(intervalId);
+        document.getElementById('btnStart').innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Resume
+        `;
+        return;
+      }
+
+      getAudioCtx(); // Ensure audio context is ready
+
+      if (phase === 'idle' || phase === 'done') {
+        startTimestamp = Date.now();
+        isRunning = true;
+        startPhase('warmup');
+        document.getElementById('settingsPanel').classList.add('disabled');
+        document.getElementById('btnReset').style.display = '';
+      } else {
+        // Resume
+        isRunning = true;
+      }
+
+      document.getElementById('btnStart').innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        Pause
+      `;
+
+      clearInterval(intervalId);
+      intervalId = setInterval(tick, 1000);
+    }
+
+    function resetTimer() {
+      isRunning = false;
+      clearInterval(intervalId);
+      phase = 'idle';
+      timeLeft = 0;
+      totalPhaseTime = 0;
+      currentCycle = 0;
+
+      document.getElementById('settingsPanel').classList.remove('disabled');
+      document.getElementById('btnReset').style.display = 'none';
+      document.getElementById('btnStart').innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Start
+      `;
+
+      document.getElementById('phaseLabel').textContent = 'Warm Up';
+      document.getElementById('modeLabel').textContent = '\u00A0';
+      document.getElementById('cycleCounter').style.display = 'none';
+      document.getElementById('progressBar').style.width = '100%';
+
+      setTheme('--warmup', '--warmup-glow', '--warmup-bg');
+      updatePhaseStrip();
+      updateIdleDisplay();
+    }
+
+    function finishWorkout() {
+      isRunning = false;
+      clearInterval(intervalId);
+      phase = 'done';
+
+      playCompleteSound();
+      showOverlay('Done!', 'Workout complete!');
+
+      // Calculate total time
+      const elapsed = Math.round((Date.now() - startTimestamp) / 1000);
+      document.getElementById('statDuration').textContent = formatTimerDisplay(elapsed);
+      document.getElementById('statCycles').textContent = settings.cycles;
+
+      setTheme('--done', '--done-glow', '--cooldown-bg');
+      updatePhaseStrip();
+
+      setTimeout(() => {
+        document.getElementById('completionScreen').classList.add('active');
+      }, 2000);
+    }
+
+    function fullReset() {
+      document.getElementById('completionScreen').classList.remove('active');
+      document.getElementById('soundOverlay').classList.remove('active');
+      resetTimer();
+    }
+
+    // ── Event listeners ──
+    document.getElementById('btnStart').addEventListener('click', startTimer);
+    document.getElementById('btnReset').addEventListener('click', resetTimer);
+
+    // ── Init ──
+    updateSettingsDisplay();
+    updateIdleDisplay();
+  </script>
+</body>
+</html>
