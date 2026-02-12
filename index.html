@@ -48,7 +48,8 @@
       background: var(--a-bg);
       color: var(--t1);
       min-height: 100dvh;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
       -webkit-font-smoothing: antialiased;
       transition: background 0.8s ease;
       display: flex; justify-content: center;
@@ -92,11 +93,11 @@
       padding-top: env(safe-area-inset-top, 16px);
       padding-bottom: env(safe-area-inset-bottom, 24px);
       display: flex; flex-direction: column;
-      height: 100dvh;
+      min-height: 100dvh;
       position: relative; z-index: 1;
     }
 
-    /* ── Top bar: strip + settings gear ── */
+    /* ── Top bar ── */
     .top-bar {
       display: flex; align-items: center; gap: 16px;
       padding: 16px 0 8px;
@@ -129,7 +130,7 @@
     .gear-btn svg { width: 20px; height: 20px; }
     .gear-btn.hide { opacity: 0; pointer-events: none; }
 
-    /* ── Progress bar (replaces ring on mobile) ── */
+    /* ── Progress bar ── */
     .progress-track {
       width: 100%;
       height: 4px;
@@ -149,7 +150,7 @@
       transform-origin: left;
     }
 
-    /* ── Hero: the timer display ── */
+    /* ── Hero ── */
     .hero {
       flex: 1;
       display: flex; flex-direction: column;
@@ -201,11 +202,11 @@
     }
 
     .meta {
-      font-size: 0.72rem; font-weight: 600;
+      font-size: 0.78rem; font-weight: 600;
       color: var(--t3);
       letter-spacing: 0.04em;
     }
-    .meta b { color: var(--t2); }
+    .meta b { color: var(--t2); font-weight: 700; }
 
     .next-pill {
       display: none;
@@ -220,7 +221,15 @@
     .next-pill.show { display: inline-flex; }
     .next-pill b { color: var(--t2); }
 
-    /* ── Idle breathing animation ── */
+    /* ── Total time preview ── */
+    .total-preview {
+      font-size: 0.72rem; font-weight: 600;
+      color: var(--t3);
+      letter-spacing: 0.04em;
+    }
+    .total-preview b { color: var(--t2); }
+
+    /* ── Idle breathing ── */
     .countdown.idle-breathe {
       animation: breathe 3s ease-in-out infinite;
     }
@@ -252,7 +261,7 @@
     .btn-go:active { transform: scale(0.97); }
     .btn-go svg { width: 18px; height: 18px; }
 
-    .btn-reset {
+    .btn-sec {
       width: 56px; height: 56px;
       border: 1px solid var(--line); border-radius: 16px;
       background: transparent; color: var(--t3);
@@ -262,10 +271,10 @@
       -webkit-tap-highlight-color: transparent;
       flex-shrink: 0;
     }
-    .btn-reset.show { display: flex; }
-    .btn-reset:hover { background: var(--surface); color: var(--t2); }
-    .btn-reset:active { transform: scale(0.92); }
-    .btn-reset svg { width: 18px; height: 18px; }
+    .btn-sec.show { display: flex; }
+    .btn-sec:hover { background: var(--surface); color: var(--t2); }
+    .btn-sec:active { transform: scale(0.92); }
+    .btn-sec svg { width: 18px; height: 18px; }
 
     /* ════════════════════════════
        BOTTOM SHEET SETTINGS
@@ -447,7 +456,7 @@
       .countdown { font-size: 5rem; }
       .speed-v { font-size: 1.8rem; }
       .ctrls { padding: 8px 0; }
-      .btn-go, .btn-reset { height: 48px; }
+      .btn-go, .btn-sec { height: 48px; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -462,7 +471,6 @@
   <div class="glow"></div>
 
   <div class="app">
-    <!-- Top bar -->
     <div class="top-bar">
       <div class="strip">
         <i id="s-w"></i><i id="s-t"></i><i id="s-c"></i>
@@ -472,12 +480,10 @@
       </button>
     </div>
 
-    <!-- Progress bar -->
     <div class="progress-track">
       <div class="progress-fill" id="progressFill"></div>
     </div>
 
-    <!-- Hero timer -->
     <div class="hero">
       <div class="phase-label" id="phaseName">Warm Up</div>
       <div class="mode-label" id="modeName">&nbsp;</div>
@@ -487,7 +493,7 @@
         <span class="speed-u">km/h</span>
       </div>
       <div class="meta" id="cycleTag" style="display:none">
-        Cycle <b id="cyNow">1</b> / <b id="cyTotal">6</b>
+        Cycle <b id="cyNow">1</b> of <b id="cyTotal">6</b>
       </div>
       <div class="next-pill" id="nextUp">
         <span style="color:var(--t3);">&rarr;</span>
@@ -495,21 +501,28 @@
         <b id="nextName">--</b>
         <span id="nextSpeed">--</span>
       </div>
+      <div class="total-preview" id="totalPreview">
+        Total <b id="totalTime">--:--</b>
+      </div>
     </div>
 
-    <!-- Controls -->
     <div class="ctrls">
       <button class="btn-go" id="btnGo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Start
       </button>
-      <button class="btn-reset" id="btnReset" aria-label="Reset">
+      <!-- Skip -->
+      <button class="btn-sec" id="btnSkip" aria-label="Skip to next phase">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+      </button>
+      <!-- Reset -->
+      <button class="btn-sec" id="btnReset" aria-label="Reset">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
       </button>
     </div>
   </div>
 
-  <!-- Bottom sheet settings -->
+  <!-- Bottom sheet -->
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
   <div class="sheet" id="sheet">
     <div class="sheet-handle"></div>
@@ -522,21 +535,21 @@
     <div class="sheet-body">
       <div class="sg">
         <div class="sg-t"><i style="background:var(--warmup)"></i> Warm Up</div>
-        <div class="sr"><span class="sr-l">Speed</span><div class="sr-c"><button onclick="adj('warmupSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-wS">6.0</span><button onclick="adj('warmupSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
-        <div class="sr"><span class="sr-l">Duration</span><div class="sr-c"><button onclick="adj('warmupTime',-30)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-wT">2:00</span><button onclick="adj('warmupTime',30)" aria-label="Increase">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Speed</span><div class="sr-c"><button onclick="adj('warmupSpeed',-0.5)">&minus;</button><span class="sr-v" id="v-wS">6.0</span><button onclick="adj('warmupSpeed',0.5)">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Duration</span><div class="sr-c"><button onclick="adj('warmupTime',-30)">&minus;</button><span class="sr-v" id="v-wT">2:00</span><button onclick="adj('warmupTime',30)">&plus;</button></div></div>
       </div>
       <div class="sg">
         <div class="sg-t"><i style="background:var(--sprint)"></i> Training</div>
-        <div class="sr"><span class="sr-l">Sprint Speed</span><div class="sr-c"><button onclick="adj('fastSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-fS">12.0</span><button onclick="adj('fastSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
-        <div class="sr"><span class="sr-l">Sprint Time</span><div class="sr-c"><button onclick="adj('fastTime',-10)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-fT">0:30</span><button onclick="adj('fastTime',10)" aria-label="Increase">&plus;</button></div></div>
-        <div class="sr"><span class="sr-l">Recovery Speed</span><div class="sr-c"><button onclick="adj('slowSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-sS">7.0</span><button onclick="adj('slowSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
-        <div class="sr"><span class="sr-l">Recovery Time</span><div class="sr-c"><button onclick="adj('slowTime',-10)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-sT">1:00</span><button onclick="adj('slowTime',10)" aria-label="Increase">&plus;</button></div></div>
-        <div class="sr"><span class="sr-l">Cycles</span><div class="sr-c"><button onclick="adj('cycles',-1)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-cy">6</span><button onclick="adj('cycles',1)" aria-label="Increase">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Sprint Speed</span><div class="sr-c"><button onclick="adj('fastSpeed',-0.5)">&minus;</button><span class="sr-v" id="v-fS">12.0</span><button onclick="adj('fastSpeed',0.5)">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Sprint Time</span><div class="sr-c"><button onclick="adj('fastTime',-10)">&minus;</button><span class="sr-v" id="v-fT">0:30</span><button onclick="adj('fastTime',10)">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Recovery Speed</span><div class="sr-c"><button onclick="adj('slowSpeed',-0.5)">&minus;</button><span class="sr-v" id="v-sS">7.0</span><button onclick="adj('slowSpeed',0.5)">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Recovery Time</span><div class="sr-c"><button onclick="adj('slowTime',-10)">&minus;</button><span class="sr-v" id="v-sT">1:00</span><button onclick="adj('slowTime',10)">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Cycles</span><div class="sr-c"><button onclick="adj('cycles',-1)">&minus;</button><span class="sr-v" id="v-cy">6</span><button onclick="adj('cycles',1)">&plus;</button></div></div>
       </div>
       <div class="sg">
         <div class="sg-t"><i style="background:var(--cool)"></i> Cool Down</div>
-        <div class="sr"><span class="sr-l">Speed</span><div class="sr-c"><button onclick="adj('cooldownSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-cS">5.0</span><button onclick="adj('cooldownSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
-        <div class="sr"><span class="sr-l">Duration</span><div class="sr-c"><button onclick="adj('cooldownTime',-30)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-cT">3:00</span><button onclick="adj('cooldownTime',30)" aria-label="Increase">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Speed</span><div class="sr-c"><button onclick="adj('cooldownSpeed',-0.5)">&minus;</button><span class="sr-v" id="v-cS">5.0</span><button onclick="adj('cooldownSpeed',0.5)">&plus;</button></div></div>
+        <div class="sr"><span class="sr-l">Duration</span><div class="sr-c"><button onclick="adj('cooldownTime',-30)">&minus;</button><span class="sr-v" id="v-cT">3:00</span><button onclick="adj('cooldownTime',30)">&plus;</button></div></div>
       </div>
     </div>
   </div>
@@ -556,7 +569,8 @@
   </div>
 
 <script>
-const S = {
+// ── Settings with localStorage persistence ──
+const DEFAULTS = {
   warmupSpeed:6, warmupTime:120,
   fastSpeed:12, fastTime:30,
   slowSpeed:7, slowTime:60,
@@ -571,13 +585,49 @@ const LIM = {
   cooldownSpeed:[2,15], cooldownTime:[30,600],
 };
 
+function loadSettings(){
+  try {
+    const saved = JSON.parse(localStorage.getItem('hiit-settings'));
+    if(saved) return {...DEFAULTS, ...saved};
+  } catch(e){}
+  return {...DEFAULTS};
+}
+function saveSettings(){
+  try { localStorage.setItem('hiit-settings', JSON.stringify(S)); } catch(e){}
+}
+
+const S = loadSettings();
+
 let phase='idle', timeLeft=0, totalT=0, cy=0;
 let tick=null, on=false, t0=null;
 
+// ── Wake Lock ──
+let wakeLock = null;
+async function requestWakeLock(){
+  try {
+    if('wakeLock' in navigator){
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', ()=>{ wakeLock=null; });
+    }
+  } catch(e){}
+}
+function releaseWakeLock(){
+  if(wakeLock){ wakeLock.release(); wakeLock=null; }
+}
+// Re-acquire wake lock when tab becomes visible again
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='visible' && on) requestWakeLock();
+});
+
 // ── Audio ──
-let ac=null, nodes=[];
+let ac=null, nodes=[], scheduledIds=[];
 function getAC(){ if(!ac) ac=new(window.AudioContext||window.webkitAudioContext); if(ac.state==='suspended') ac.resume(); return ac; }
-function stopAudio(){ nodes.forEach(n=>{try{n.stop()}catch(e){}}); nodes=[]; }
+function stopAudio(){
+  nodes.forEach(n=>{try{n.stop()}catch(e){}});
+  nodes=[];
+  scheduledIds.forEach(id=>clearTimeout(id));
+  scheduledIds=[];
+}
 
 // Helper: play a tone with optional pitch sweep
 function tone(freq, dur, type, vol, endFreq){
@@ -593,86 +643,79 @@ function tone(freq, dur, type, vol, endFreq){
   o.start(t); o.stop(t+dur+0.01); nodes.push(o);
 }
 
-// Helper: play a repeating pattern of short tones over a duration
+// Helper: play a repeating pattern using setTimeout for cancellability
 function seq(notes, gap, type, vol, dur){
-  stopAudio(); const c=getAC(), now=c.currentTime;
+  stopAudio();
+  const startMs = performance.now();
   const patLen = notes.length * gap;
-  const pauseBetween = 0.6; // silence between repeats
+  const pauseBetween = 0.6;
   const cycleLen = patLen + pauseBetween;
-  let t = now;
-  while(t < now + dur){
+  let offset = 0;
+  function schedulePattern(){
+    if(performance.now() - startMs > dur*1000) return;
     notes.forEach((n,i)=>{
-      const st = t + i*gap;
-      if(st >= now + dur) return;
-      const o=c.createOscillator(), g=c.createGain();
-      o.type=type; o.frequency.value=n.f;
-      g.gain.setValueAtTime(0,st);
-      g.gain.linearRampToValueAtTime(vol,st+0.01);
-      g.gain.setValueAtTime(vol,st+n.d*0.5);
-      g.gain.exponentialRampToValueAtTime(0.001,st+n.d);
-      o.connect(g).connect(c.destination);
-      o.start(st); o.stop(st+n.d+0.01); nodes.push(o);
+      const delay = (offset + i*gap)*1000;
+      if(delay > dur*1000) return;
+      const id = setTimeout(()=>{
+        if(!on && phase!=='done') return; // don't play if paused (except done screen)
+        const c=getAC(), t=c.currentTime;
+        const o=c.createOscillator(), g=c.createGain();
+        o.type=type; o.frequency.value=n.f;
+        g.gain.setValueAtTime(0,t);
+        g.gain.linearRampToValueAtTime(vol,t+0.01);
+        g.gain.setValueAtTime(vol,t+n.d*0.5);
+        g.gain.exponentialRampToValueAtTime(0.001,t+n.d);
+        o.connect(g).connect(c.destination);
+        o.start(t); o.stop(t+n.d+0.01); nodes.push(o);
+      }, delay);
+      scheduledIds.push(id);
     });
-    t += cycleLen;
+    offset += cycleLen;
+    if(offset < dur){
+      const id = setTimeout(schedulePattern, cycleLen*1000);
+      scheduledIds.push(id);
+    }
   }
+  schedulePattern();
 }
 
 const SND_DUR = 7;
 
-// Sprint: rapid ascending pips, repeating
 function sndFast(){
-  seq([
-    {f:880,d:0.08},{f:1100,d:0.08},{f:1320,d:0.12}
-  ], 0.14, 'sine', 0.3, SND_DUR);
+  seq([{f:880,d:0.08},{f:1100,d:0.08},{f:1320,d:0.12}], 0.14, 'sine', 0.3, SND_DUR);
 }
-
-// Recovery: soft descending tones, repeating
 function sndSlow(){
-  seq([
-    {f:660,d:0.15},{f:440,d:0.2}
-  ], 0.25, 'sine', 0.22, SND_DUR);
+  seq([{f:660,d:0.15},{f:440,d:0.2}], 0.25, 'sine', 0.22, SND_DUR);
 }
-
-// Warmup: gentle rising chime, repeating
 function sndWarmup(){
-  seq([
-    {f:523,d:0.12},{f:659,d:0.12},{f:784,d:0.18}
-  ], 0.18, 'triangle', 0.2, SND_DUR);
+  seq([{f:523,d:0.12},{f:659,d:0.12},{f:784,d:0.18}], 0.18, 'triangle', 0.2, SND_DUR);
 }
-
-// Training start: urgent double-hit, repeating
 function sndTrainStart(){
-  seq([
-    {f:740,d:0.1},{f:988,d:0.15}
-  ], 0.18, 'sine', 0.3, SND_DUR);
+  seq([{f:740,d:0.1},{f:988,d:0.15}], 0.18, 'sine', 0.3, SND_DUR);
 }
-
-// Cooldown: calm descending notes, repeating
 function sndCooldown(){
-  seq([
-    {f:784,d:0.18},{f:523,d:0.25}
-  ], 0.28, 'sine', 0.2, SND_DUR);
+  seq([{f:784,d:0.18},{f:523,d:0.25}], 0.28, 'sine', 0.2, SND_DUR);
 }
-
-// Done: major chord arpeggio, repeating
 function sndDone(){
-  seq([
-    {f:523,d:0.12},{f:659,d:0.12},{f:784,d:0.12},{f:1047,d:0.3}
-  ], 0.18, 'sine', 0.25, SND_DUR);
+  seq([{f:523,d:0.12},{f:659,d:0.12},{f:784,d:0.12},{f:1047,d:0.3}], 0.18, 'sine', 0.25, SND_DUR);
 }
 
-// Countdown: 3 ticks at 1s intervals, last one higher
+// Countdown: 3 ticks, but stop early if phase changes
 function sndCountdown(){
-  const c=getAC(), n=c.currentTime;
+  const c=getAC();
   for(let i=0;i<3;i++){
-    const t=n+i, o=c.createOscillator(), g=c.createGain();
-    o.type='sine'; o.frequency.value= i<2 ? 660 : 990;
-    g.gain.setValueAtTime(0,t);
-    g.gain.linearRampToValueAtTime(0.28,t+0.01);
-    g.gain.setValueAtTime(0.28,t+0.06);
-    g.gain.exponentialRampToValueAtTime(0.001,t+0.15);
-    o.connect(g).connect(c.destination);
-    o.start(t); o.stop(t+0.2); nodes.push(o);
+    const id = setTimeout(()=>{
+      if(timeLeft <= 0) return; // phase already changed, skip
+      const t=c.currentTime, o=c.createOscillator(), g=c.createGain();
+      o.type='sine'; o.frequency.value= i<2 ? 660 : 990;
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(0.28,t+0.01);
+      g.gain.setValueAtTime(0.28,t+0.06);
+      g.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+      o.connect(g).connect(c.destination);
+      o.start(t); o.stop(t+0.2); nodes.push(o);
+    }, i*1000);
+    scheduledIds.push(id);
   }
 }
 
@@ -703,6 +746,10 @@ const $=id=>document.getElementById(id);
 function fmt(s){ return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
 function fmtB(s){ return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
 
+function calcTotal(){
+  return S.warmupTime + S.cycles*(S.fastTime + S.slowTime) + S.cooldownTime;
+}
+
 // ── Strip ──
 function updStrip(){
   const w=$('s-w'),t=$('s-t'),c=$('s-c');
@@ -732,7 +779,6 @@ $('gearBtn').addEventListener('click', openSheet);
 $('sheetBackdrop').addEventListener('click', closeSheet);
 $('sheetClose').addEventListener('click', closeSheet);
 
-// Swipe down to dismiss
 let sheetStartY=0;
 $('sheet').addEventListener('touchstart', e=>{
   sheetStartY = e.touches[0].clientY;
@@ -748,6 +794,7 @@ function adj(k,d){
   const [mn,mx]=LIM[k]; let v=S[k]+d;
   v=Math.max(mn,Math.min(mx,v));
   S[k]=k.includes('Speed')? Math.round(v*10)/10 : Math.round(v);
+  saveSettings();
   renderS(); if(phase==='idle') renderIdle();
 }
 
@@ -766,6 +813,8 @@ function renderS(){
 function renderIdle(){
   $('countdown').textContent=fmtB(S.warmupTime);
   $('speedNum').textContent=S.warmupSpeed.toFixed(1);
+  $('totalTime').textContent=fmtB(calcTotal());
+  $('totalPreview').style.display='';
   setProgress(1);
 }
 
@@ -790,6 +839,7 @@ function showNext(){
 function render(){
   $('countdown').textContent=fmtB(timeLeft);
   $('countdown').classList.remove('idle-breathe');
+  $('totalPreview').style.display='none';
   let spd=0, pN='', mN='', showCy=false;
   switch(phase){
     case 'warmup':   spd=S.warmupSpeed; pN='Warm Up';   TH.warmup(); break;
@@ -800,8 +850,13 @@ function render(){
   $('speedNum').textContent=spd.toFixed(1);
   $('phaseName').textContent=pN;
   $('modeName').textContent=mN||'\u00A0';
-  if(showCy){ $('cycleTag').style.display='block'; $('cyNow').textContent=cy; $('cyTotal').textContent=S.cycles; }
-  else { $('cycleTag').style.display='none'; }
+  if(showCy){
+    $('cycleTag').style.display='block';
+    $('cyNow').textContent=cy;
+    $('cyTotal').textContent=S.cycles;
+  } else {
+    $('cycleTag').style.display='none';
+  }
   const pct=totalT>0? timeLeft/totalT : 1;
   setProgress(pct);
   updStrip(); showNext();
@@ -813,10 +868,20 @@ let cdPlayed=false;
 function go(p){
   phase=p; cdPlayed=false;
   switch(p){
-    case 'warmup': timeLeft=S.warmupTime; totalT=S.warmupTime; cy=0; sndWarmup(); pulse(PC.warmup); break;
-    case 'fast': cy++; timeLeft=S.fastTime; totalT=S.fastTime; cy===1?sndTrainStart():sndFast(); pulse(PC.fast); break;
-    case 'slow': timeLeft=S.slowTime; totalT=S.slowTime; sndSlow(); pulse(PC.slow); break;
-    case 'cooldown': timeLeft=S.cooldownTime; totalT=S.cooldownTime; sndCooldown(); pulse(PC.cooldown); break;
+    case 'warmup':
+      timeLeft=S.warmupTime; totalT=S.warmupTime; cy=0;
+      sndWarmup(); pulse(PC.warmup); break;
+    case 'fast':
+      cy++;
+      timeLeft=S.fastTime; totalT=S.fastTime;
+      cy===1 ? sndTrainStart() : sndFast();
+      pulse(PC.fast); break;
+    case 'slow':
+      timeLeft=S.slowTime; totalT=S.slowTime;
+      sndSlow(); pulse(PC.slow); break;
+    case 'cooldown':
+      timeLeft=S.cooldownTime; totalT=S.cooldownTime;
+      sndCooldown(); pulse(PC.cooldown); break;
     case 'done': finish(); return;
   }
   render();
@@ -829,6 +894,12 @@ function next(){
     case 'slow': cy>=S.cycles ? go('cooldown') : go('fast'); break;
     case 'cooldown': go('done'); break;
   }
+}
+
+function skip(){
+  if(!on) return;
+  stopAudio();
+  next();
 }
 
 function tickFn(){
@@ -846,11 +917,16 @@ const ico={
 
 function start(){
   const b=$('btnGo');
-  if(on){ on=false; clearInterval(tick); stopAudio(); b.innerHTML=ico.play+' Resume'; return; }
-  getAC();
+  if(on){
+    on=false; clearInterval(tick); stopAudio(); releaseWakeLock();
+    b.innerHTML=ico.play+' Resume';
+    return;
+  }
+  getAC(); requestWakeLock();
   if(phase==='idle'||phase==='done'){
     t0=Date.now(); on=true; go('warmup');
     $('gearBtn').classList.add('hide');
+    $('btnSkip').classList.add('show');
     $('btnReset').classList.add('show');
     closeSheet();
   } else { on=true; }
@@ -859,9 +935,10 @@ function start(){
 }
 
 function reset(){
-  on=false; clearInterval(tick); stopAudio();
+  on=false; clearInterval(tick); stopAudio(); releaseWakeLock();
   phase='idle'; timeLeft=totalT=cy=0;
   $('gearBtn').classList.remove('hide');
+  $('btnSkip').classList.remove('show');
   $('btnReset').classList.remove('show');
   $('btnGo').innerHTML=ico.play+' Start';
   $('phaseName').textContent='Warm Up';
@@ -874,7 +951,7 @@ function reset(){
 }
 
 function finish(){
-  on=false; clearInterval(tick); phase='done';
+  on=false; clearInterval(tick); phase='done'; releaseWakeLock();
   sndDone(); pulse(PC.done); TH.done(); updStrip();
   const el=Math.round((Date.now()-t0)/1000);
   $('statTime').textContent=fmtB(el);
@@ -885,6 +962,7 @@ function finish(){
 function fullReset(){ $('doneScreen').classList.remove('on'); reset(); }
 
 $('btnGo').addEventListener('click', start);
+$('btnSkip').addEventListener('click', skip);
 $('btnReset').addEventListener('click', reset);
 renderS(); renderIdle();
 </script>
