@@ -6,496 +6,357 @@
   <title>HIIT Runner</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg-primary: #0a0e17;
-      --bg-secondary: #111827;
-      --bg-card: rgba(17, 24, 39, 0.85);
-      --border-subtle: rgba(255, 255, 255, 0.06);
-      --text-primary: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-muted: #64748b;
+      --bg: #07090f;
+      --card: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.07);
+      --text: #f0f2f5;
+      --text2: #a0aab8;
+      --text3: #6b7a8d;
 
-      --warmup-color: #f59e0b;
-      --warmup-glow: rgba(245, 158, 11, 0.25);
-      --fast-color: #ef4444;
-      --fast-glow: rgba(239, 68, 68, 0.3);
-      --slow-color: #3b82f6;
-      --slow-glow: rgba(59, 130, 246, 0.25);
-      --cooldown-color: #06b6d4;
-      --cooldown-glow: rgba(6, 182, 212, 0.25);
-      --done-color: #10b981;
-      --done-glow: rgba(16, 185, 129, 0.25);
+      /* Phase palette — background tints + accent */
+      --warmup-bg: #1a1508;
+      --warmup: #fbbf24;
+      --warmup-dim: rgba(251,191,36,0.15);
 
-      --accent: var(--warmup-color);
-      --accent-glow: var(--warmup-glow);
+      --fast-bg: #1c0a0a;
+      --fast: #f87171;
+      --fast-dim: rgba(248,113,113,0.15);
 
-      --radius: 14px;
-      --radius-sm: 10px;
+      --slow-bg: #0a0f1c;
+      --slow: #60a5fa;
+      --slow-dim: rgba(96,165,250,0.15);
+
+      --cool-bg: #081415;
+      --cool: #22d3ee;
+      --cool-dim: rgba(34,211,238,0.15);
+
+      --done: #34d399;
+      --done-dim: rgba(52,211,153,0.15);
+
+      /* Active theme (set by JS) */
+      --phase-bg: var(--bg);
+      --accent: var(--warmup);
+      --accent-dim: var(--warmup-dim);
     }
 
-    html {
-      height: 100%;
-    }
+    html { height: 100%; }
 
     body {
-      font-family: 'Space Grotesk', sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      min-height: 100%;
+      font-family: 'Outfit', sans-serif;
+      background: var(--phase-bg);
+      color: var(--text);
       min-height: 100dvh;
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
-      -webkit-overflow-scrolling: touch;
+      transition: background 0.8s ease;
+      display: flex;
+      justify-content: center;
     }
 
-    /* ── Screen pulse effect ── */
-    .pulse-ring {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 90;
+    /* ── Pulse overlay ── */
+    .pulse {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 90;
       opacity: 0;
-      transition: opacity 0.15s;
+    }
+    .pulse.on {
+      animation: glow-pulse 1s ease-in-out 5;
+    }
+    @keyframes glow-pulse {
+      0%   { opacity: 0; box-shadow: inset 0 0 60px 15px var(--pulse-c); }
+      35%  { opacity: 1; box-shadow: inset 0 0 120px 40px var(--pulse-c); }
+      100% { opacity: 0; box-shadow: inset 0 0 60px 15px var(--pulse-c); }
     }
 
-    .pulse-ring.active {
-      animation: screen-pulse 1s ease-in-out 5;
-    }
-
-    @keyframes screen-pulse {
-      0%   { opacity: 0; box-shadow: inset 0 0 40px 10px var(--pulse-color, #f59e0b); }
-      40%  { opacity: 1; box-shadow: inset 0 0 80px 30px var(--pulse-color, #f59e0b); }
-      100% { opacity: 0; box-shadow: inset 0 0 40px 10px var(--pulse-color, #f59e0b); }
-    }
-
-    /* ── Ambient background ── */
-    .bg-glow {
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(ellipse 60% 40% at 50% 20%, var(--accent-glow), transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-      transition: background 1s ease;
-    }
-
-    /* ── App container ── */
+    /* ── App shell ── */
     .app {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 400px;
-      margin: 0 auto;
-      padding: 16px 14px 24px;
-      display: flex;
-      flex-direction: column;
+      width: 100%; max-width: 420px;
+      padding: 12px 16px env(safe-area-inset-bottom, 16px);
+      display: flex; flex-direction: column;
       min-height: 100dvh;
+      position: relative; z-index: 1;
     }
 
-    /* ── Header ── */
-    .header {
+    /* ── Thin phase strip ── */
+    .strip { display: flex; gap: 4px; margin-bottom: 10px; flex-shrink: 0; }
+    .strip i {
+      flex: 1; height: 3px; border-radius: 2px;
+      background: var(--border); transition: all 0.5s;
+      font-style: normal;
+    }
+    .strip i.on  { background: var(--accent); box-shadow: 0 0 8px var(--accent-dim); }
+    .strip i.done { background: var(--text3); }
+
+    /* ═══════════════════════════
+       TIMER — the hero element
+       ═══════════════════════════ */
+    .timer {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
       text-align: center;
-      margin-bottom: 10px;
-      flex-shrink: 0;
-    }
-
-    .header h1 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-    }
-
-    .header h1 span {
-      color: var(--accent);
-      transition: color 0.6s ease;
-    }
-
-    /* ── Phase strip ── */
-    .phase-strip {
-      display: flex;
-      gap: 5px;
-      margin-bottom: 12px;
-      flex-shrink: 0;
-    }
-
-    .phase-strip-item {
-      flex: 1;
-      height: 3px;
-      border-radius: 2px;
-      background: var(--border-subtle);
-      transition: background 0.4s, box-shadow 0.4s;
-    }
-
-    .phase-strip-item.active {
-      background: var(--accent);
-      box-shadow: 0 0 10px var(--accent-glow);
-    }
-
-    .phase-strip-item.completed {
-      background: var(--text-muted);
-    }
-
-    /* ── Timer card ── */
-    .timer-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-      padding: 20px 16px 16px;
-      text-align: center;
-      backdrop-filter: blur(20px);
-      margin-bottom: 10px;
-      position: relative;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-
-    .timer-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: var(--accent);
-      transition: background 0.6s;
-    }
-
-    .phase-label {
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--accent);
-      transition: color 0.6s;
-    }
-
-    .mode-label {
-      font-size: 0.65rem;
-      font-weight: 500;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-      min-height: 1em;
-    }
-
-    .time-display {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 4rem;
-      font-weight: 700;
-      line-height: 1;
-      color: var(--text-primary);
-      margin-bottom: 8px;
-      letter-spacing: -0.02em;
-    }
-
-    .speed-row {
-      display: flex;
-      align-items: baseline;
-      justify-content: center;
-      gap: 6px;
-    }
-
-    .speed-val {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 1.7rem;
-      font-weight: 700;
-      color: var(--accent);
-      transition: color 0.6s;
-    }
-
-    .speed-unit {
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: var(--text-muted);
-    }
-
-    .cycle-info {
-      margin-top: 6px;
-      font-size: 0.7rem;
-      font-weight: 500;
-      color: var(--text-muted);
-      letter-spacing: 0.04em;
-    }
-
-    .cycle-info b {
-      color: var(--text-secondary);
-      font-weight: 600;
-    }
-
-    .progress-track {
-      width: 100%;
-      height: 4px;
-      background: rgba(255,255,255,0.04);
-      border-radius: 2px;
-      margin-top: 12px;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: var(--accent);
-      border-radius: 2px;
-      transition: width 0.3s linear, background 0.6s;
-      width: 100%;
-    }
-
-    /* ── Controls ── */
-    .controls {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-      flex-shrink: 0;
-    }
-
-    .btn {
-      flex: 1;
-      height: 48px;
-      min-height: 44px;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 0.85rem;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      transition: all 0.2s;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .btn:active { transform: scale(0.97); }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #0a0e17;
-      box-shadow: 0 4px 16px var(--accent-glow);
-      transition: background 0.6s, box-shadow 0.6s;
-    }
-
-    .btn-primary:hover { filter: brightness(1.1); }
-
-    .btn-secondary {
-      background: rgba(255,255,255,0.06);
-      color: var(--text-secondary);
-      border: 1px solid var(--border-subtle);
-    }
-
-    .btn-secondary:hover { background: rgba(255,255,255,0.1); }
-
-    .btn svg { width: 18px; height: 18px; }
-
-    /* ── Settings ── */
-    .settings {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius);
-      backdrop-filter: blur(20px);
-      overflow: hidden;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
+      padding: 8px 0;
       min-height: 0;
     }
 
-    .settings.disabled {
-      opacity: 0.4;
-      pointer-events: none;
+    .phase-name {
+      font-size: 1.1rem; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--accent);
+      transition: color 0.6s;
+      margin-bottom: 2px;
     }
 
-    .settings-header {
-      padding: 10px 16px 8px;
-      font-size: 0.65rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--border-subtle);
+    .mode-name {
+      font-size: 0.85rem; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text2);
+      min-height: 1.2em;
+      margin-bottom: 12px;
+    }
+
+    .countdown {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 6rem; font-weight: 800;
+      line-height: 1; letter-spacing: -0.03em;
+      color: var(--text);
+      margin-bottom: 12px;
+      /* Prevent layout shift from digit width changes */
+      font-variant-numeric: tabular-nums;
+    }
+
+    .speed {
+      display: flex; align-items: baseline; gap: 8px;
+      margin-bottom: 8px;
+    }
+    .speed-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2.6rem; font-weight: 700;
+      color: var(--accent);
+      transition: color 0.6s;
+      font-variant-numeric: tabular-nums;
+    }
+    .speed-unit {
+      font-size: 0.95rem; font-weight: 500;
+      color: var(--text3);
+    }
+
+    .cycle-tag {
+      font-size: 0.8rem; font-weight: 600;
+      color: var(--text3);
+      letter-spacing: 0.04em;
+      margin-bottom: 10px;
+    }
+    .cycle-tag b { color: var(--text2); }
+
+    /* Progress bar */
+    .prog { width: 100%; max-width: 280px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .prog-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s linear, background 0.6s; width: 100%; }
+
+    /* ── Next-up preview ── */
+    .next-up {
+      margin-top: 14px;
+      padding: 8px 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text3);
+      display: none;
+      gap: 6px;
+      align-items: center;
+    }
+    .next-up.show { display: flex; }
+    .next-up b { color: var(--text2); font-weight: 600; }
+    .next-label { margin-right: auto; }
+
+    /* ═══════════════════
+       CONTROLS
+       ═══════════════════ */
+    .ctrls {
       flex-shrink: 0;
+      display: flex; flex-direction: column; gap: 8px;
+      padding-top: 8px;
     }
 
-    .settings-scroll {
+    .btn-big {
+      width: 100%; height: 64px;
+      border: none; border-radius: 14px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.05rem; font-weight: 700;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.2s;
+    }
+    .btn-big:active { transform: scale(0.98); }
+    .btn-big svg { width: 22px; height: 22px; }
+
+    .btn-go {
+      background: var(--accent); color: var(--bg);
+      box-shadow: 0 6px 24px var(--accent-dim);
+      transition: background 0.6s, box-shadow 0.6s;
+    }
+    .btn-go:hover { filter: brightness(1.08); }
+
+    .btn-reset {
+      height: 44px; border-radius: 10px;
+      background: var(--card); color: var(--text3);
+      border: 1px solid var(--border);
+      font-size: 0.85rem; font-weight: 600;
+    }
+    .btn-reset:hover { background: rgba(255,255,255,0.08); color: var(--text2); }
+
+    /* ═══════════════════
+       SETTINGS (idle only)
+       ═══════════════════ */
+    .settings {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-top: 10px;
+      transition: all 0.4s ease;
+    }
+
+    /* Collapse during workout */
+    .settings.collapsed {
+      max-height: 0 !important;
+      opacity: 0;
+      margin: 0;
+      border: none;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .settings-hdr {
+      padding: 10px 16px 8px;
+      font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text3);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .settings-body {
       overflow-y: auto;
-      flex: 1;
+      max-height: 50vh;
       -webkit-overflow-scrolling: touch;
     }
 
-    .setting-group {
-      padding: 6px 14px 8px;
-      border-bottom: 1px solid var(--border-subtle);
+    .sg {
+      padding: 8px 16px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sg:last-child { border-bottom: none; }
+
+    .sg-t {
+      font-size: 0.62rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text3); margin-bottom: 4px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .sg-t i {
+      width: 6px; height: 6px; border-radius: 50%;
+      display: inline-block; font-style: normal;
     }
 
-    .setting-group:last-child { border-bottom: none; }
-
-    .sg-title {
-      font-size: 0.62rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .sg-title .dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      display: inline-block;
-    }
-
-    .s-row {
-      display: flex;
-      align-items: center;
+    .sr {
+      display: flex; align-items: center;
       justify-content: space-between;
-      height: 36px;
+      height: 38px;
     }
 
-    .s-label {
-      font-size: 0.78rem;
-      font-weight: 500;
-      color: var(--text-secondary);
+    .sr-label {
+      font-size: 0.82rem; font-weight: 500; color: var(--text2);
     }
 
-    .s-ctrl {
-      display: flex;
-      align-items: center;
-      gap: 2px;
+    .sr-ctrl {
+      display: flex; align-items: center; gap: 2px;
     }
 
-    .s-ctrl button {
-      width: 36px;
-      height: 36px;
-      min-width: 44px;
-      min-height: 44px;
-      padding: 0;
-      border: 1px solid var(--border-subtle);
-      background: rgba(255,255,255,0.04);
-      color: var(--text-secondary);
+    .sr-ctrl button {
+      width: 36px; height: 36px;
+      /* Accessible touch area larger than visual */
+      min-width: 44px; min-height: 44px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      color: var(--text2);
       border-radius: 8px;
-      font-size: 1.1rem;
-      font-weight: 600;
+      font-size: 1.15rem; font-weight: 600;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       transition: all 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
+    .sr-ctrl button:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+    .sr-ctrl button:active { transform: scale(0.92); }
 
-    .s-ctrl button:hover {
-      background: rgba(255,255,255,0.1);
-      color: var(--text-primary);
-    }
-
-    .s-ctrl button:active { transform: scale(0.92); }
-
-    .s-val {
+    .sr-val {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      min-width: 38px;
-      text-align: center;
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--text);
+      min-width: 40px; text-align: center;
     }
 
-    /* ── Completion screen ── */
+    /* ═══════════════════
+       DONE SCREEN
+       ═══════════════════ */
     .done-screen {
-      position: fixed;
-      inset: 0;
-      z-index: 50;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: var(--bg-primary);
-      opacity: 0;
-      pointer-events: none;
+      position: fixed; inset: 0; z-index: 50;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: var(--bg);
+      opacity: 0; pointer-events: none;
       transition: opacity 0.6s;
     }
+    .done-screen.on { opacity: 1; pointer-events: auto; }
 
-    .done-screen.active {
-      opacity: 1;
-      pointer-events: auto;
+    .done-badge {
+      width: 96px; height: 96px; border-radius: 50%;
+      background: var(--done);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 24px;
+      box-shadow: 0 0 60px var(--done-dim);
     }
+    .done-badge svg { width: 48px; height: 48px; color: var(--bg); }
 
-    .done-icon {
-      width: 88px;
-      height: 88px;
-      border-radius: 50%;
-      background: var(--done-color);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 20px;
-      box-shadow: 0 0 50px var(--done-glow);
-    }
+    .done-h { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
+    .done-p { font-size: 0.95rem; color: var(--text2); margin-bottom: 32px; }
 
-    .done-icon svg { width: 42px; height: 42px; color: #0a0e17; }
-
-    .done-title {
-      font-size: 1.8rem;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .done-sub {
-      font-size: 0.9rem;
-      color: var(--text-secondary);
-      margin-bottom: 28px;
-    }
-
-    .done-stats {
-      display: flex;
-      gap: 28px;
-      margin-bottom: 32px;
-    }
-
+    .done-stats { display: flex; gap: 32px; margin-bottom: 36px; }
     .done-stat { text-align: center; }
-
-    .done-stat-val {
+    .done-stat-v {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: var(--done-color);
+      font-size: 1.4rem; font-weight: 700; color: var(--done);
+    }
+    .done-stat-l {
+      font-size: 0.7rem; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.08em;
     }
 
-    .done-stat-lbl {
-      font-size: 0.68rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    /* ── Responsive for small screens ── */
+    /* ═══════════════════
+       RESPONSIVE
+       ═══════════════════ */
     @media (max-height: 640px) {
-      .time-display { font-size: 3rem; }
-      .timer-card { padding: 14px 14px 12px; }
-      .speed-val { font-size: 1.3rem; }
-      .s-row { height: 32px; }
+      .countdown { font-size: 4.5rem; }
+      .speed-num { font-size: 2rem; }
+      .phase-name { font-size: 0.95rem; }
+      .btn-big { height: 56px; }
     }
 
-    @media (max-height: 540px) {
-      .time-display { font-size: 2.5rem; }
-      .header { margin-bottom: 6px; }
-      .header h1 { font-size: 0.9rem; }
-      .phase-strip { margin-bottom: 8px; }
-      .timer-card { padding: 10px 12px 10px; margin-bottom: 6px; }
-      .controls { margin-bottom: 6px; }
-      .btn { height: 42px; font-size: 0.8rem; }
+    @media (max-height: 520px) {
+      .countdown { font-size: 3.5rem; }
+      .speed-num { font-size: 1.6rem; }
+      .mode-name { margin-bottom: 6px; }
+      .btn-big { height: 48px; font-size: 0.9rem; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -507,142 +368,130 @@
   </style>
 </head>
 <body>
-  <!-- Screen pulse overlay -->
-  <div class="pulse-ring" id="pulseRing"></div>
-
-  <!-- Ambient glow -->
-  <div class="bg-glow"></div>
+  <div class="pulse" id="pulse"></div>
 
   <div class="app">
-    <div class="header">
-      <h1>HIIT <span>Runner</span></h1>
+    <!-- Phase strip -->
+    <div class="strip">
+      <i id="s-w"></i><i id="s-t"></i><i id="s-c"></i>
     </div>
 
-    <div class="phase-strip">
-      <div class="phase-strip-item" id="strip-warmup"></div>
-      <div class="phase-strip-item" id="strip-training"></div>
-      <div class="phase-strip-item" id="strip-cooldown"></div>
-    </div>
-
-    <div class="timer-card">
-      <div class="phase-label" id="phaseLabel">Warm Up</div>
-      <div class="mode-label" id="modeLabel">&nbsp;</div>
-      <div class="time-display" id="timeDisplay">02:00</div>
-      <div class="speed-row">
-        <span class="speed-val" id="speedDisplay">6.0</span>
+    <!-- Timer hero -->
+    <div class="timer">
+      <div class="phase-name" id="phaseName">Warm Up</div>
+      <div class="mode-name" id="modeName">&nbsp;</div>
+      <div class="countdown" id="countdown">02:00</div>
+      <div class="speed">
+        <span class="speed-num" id="speedNum">6.0</span>
         <span class="speed-unit">km/h</span>
       </div>
-      <div class="cycle-info" id="cycleInfo" style="display:none;">
-        Cycle <b id="curCycle">1</b> / <b id="totCycles">6</b>
+      <div class="cycle-tag" id="cycleTag" style="display:none">
+        Cycle <b id="cyNow">1</b> / <b id="cyTotal">6</b>
       </div>
-      <div class="progress-track">
-        <div class="progress-fill" id="progressBar"></div>
+      <div class="prog">
+        <div class="prog-fill" id="progFill"></div>
+      </div>
+      <div class="next-up" id="nextUp">
+        <span class="next-label">Next</span>
+        <b id="nextName">--</b>
+        <span id="nextSpeed">--</span>
       </div>
     </div>
 
-    <div class="controls">
-      <button class="btn btn-primary" id="btnStart">
+    <!-- Controls -->
+    <div class="ctrls">
+      <button class="btn-big btn-go" id="btnGo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Start
       </button>
-      <button class="btn btn-secondary" id="btnReset" style="display:none;">
+      <button class="btn-big btn-reset" id="btnReset" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
         Reset
       </button>
     </div>
 
-    <div class="settings" id="settingsPanel">
-      <div class="settings-header">Settings</div>
-      <div class="settings-scroll">
-        <!-- Warm Up -->
-        <div class="setting-group">
-          <div class="sg-title">
-            <span class="dot" style="background:var(--warmup-color)"></span> Warm Up
-          </div>
-          <div class="s-row">
-            <span class="s-label">Speed</span>
-            <div class="s-ctrl">
-              <button onclick="adj('warmupSpeed',-0.5)" aria-label="Decrease warm up speed">&minus;</button>
-              <span class="s-val" id="v-warmupSpeed">6.0</span>
-              <button onclick="adj('warmupSpeed',0.5)" aria-label="Increase warm up speed">&plus;</button>
+    <!-- Settings (hidden during workout) -->
+    <div class="settings" id="settings">
+      <div class="settings-hdr">Settings</div>
+      <div class="settings-body">
+        <div class="sg">
+          <div class="sg-t"><i style="background:var(--warmup)"></i> Warm Up</div>
+          <div class="sr">
+            <span class="sr-label">Speed</span>
+            <div class="sr-ctrl">
+              <button onclick="adj('warmupSpeed',-0.5)" aria-label="Decrease">&minus;</button>
+              <span class="sr-val" id="v-wS">6.0</span>
+              <button onclick="adj('warmupSpeed',0.5)" aria-label="Increase">&plus;</button>
             </div>
           </div>
-          <div class="s-row">
-            <span class="s-label">Duration</span>
-            <div class="s-ctrl">
-              <button onclick="adj('warmupTime',-30)" aria-label="Decrease warm up time">&minus;</button>
-              <span class="s-val" id="v-warmupTime">2:00</span>
-              <button onclick="adj('warmupTime',30)" aria-label="Increase warm up time">&plus;</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Training -->
-        <div class="setting-group">
-          <div class="sg-title">
-            <span class="dot" style="background:var(--fast-color)"></span> Training
-          </div>
-          <div class="s-row">
-            <span class="s-label">Fast Speed</span>
-            <div class="s-ctrl">
-              <button onclick="adj('fastSpeed',-0.5)" aria-label="Decrease fast speed">&minus;</button>
-              <span class="s-val" id="v-fastSpeed">12.0</span>
-              <button onclick="adj('fastSpeed',0.5)" aria-label="Increase fast speed">&plus;</button>
-            </div>
-          </div>
-          <div class="s-row">
-            <span class="s-label">Fast Duration</span>
-            <div class="s-ctrl">
-              <button onclick="adj('fastTime',-10)" aria-label="Decrease fast time">&minus;</button>
-              <span class="s-val" id="v-fastTime">0:30</span>
-              <button onclick="adj('fastTime',10)" aria-label="Increase fast time">&plus;</button>
-            </div>
-          </div>
-          <div class="s-row">
-            <span class="s-label">Slow Speed</span>
-            <div class="s-ctrl">
-              <button onclick="adj('slowSpeed',-0.5)" aria-label="Decrease slow speed">&minus;</button>
-              <span class="s-val" id="v-slowSpeed">7.0</span>
-              <button onclick="adj('slowSpeed',0.5)" aria-label="Increase slow speed">&plus;</button>
-            </div>
-          </div>
-          <div class="s-row">
-            <span class="s-label">Slow Duration</span>
-            <div class="s-ctrl">
-              <button onclick="adj('slowTime',-10)" aria-label="Decrease slow time">&minus;</button>
-              <span class="s-val" id="v-slowTime">1:00</span>
-              <button onclick="adj('slowTime',10)" aria-label="Increase slow time">&plus;</button>
-            </div>
-          </div>
-          <div class="s-row">
-            <span class="s-label">Cycles</span>
-            <div class="s-ctrl">
-              <button onclick="adj('cycles',-1)" aria-label="Decrease cycles">&minus;</button>
-              <span class="s-val" id="v-cycles">6</span>
-              <button onclick="adj('cycles',1)" aria-label="Increase cycles">&plus;</button>
+          <div class="sr">
+            <span class="sr-label">Duration</span>
+            <div class="sr-ctrl">
+              <button onclick="adj('warmupTime',-30)" aria-label="Decrease">&minus;</button>
+              <span class="sr-val" id="v-wT">2:00</span>
+              <button onclick="adj('warmupTime',30)" aria-label="Increase">&plus;</button>
             </div>
           </div>
         </div>
-
-        <!-- Cool Down -->
-        <div class="setting-group">
-          <div class="sg-title">
-            <span class="dot" style="background:var(--cooldown-color)"></span> Cool Down
-          </div>
-          <div class="s-row">
-            <span class="s-label">Speed</span>
-            <div class="s-ctrl">
-              <button onclick="adj('cooldownSpeed',-0.5)" aria-label="Decrease cool down speed">&minus;</button>
-              <span class="s-val" id="v-cooldownSpeed">5.0</span>
-              <button onclick="adj('cooldownSpeed',0.5)" aria-label="Increase cool down speed">&plus;</button>
+        <div class="sg">
+          <div class="sg-t"><i style="background:var(--fast)"></i> Training</div>
+          <div class="sr">
+            <span class="sr-label">Fast Speed</span>
+            <div class="sr-ctrl">
+              <button onclick="adj('fastSpeed',-0.5)" aria-label="Decrease">&minus;</button>
+              <span class="sr-val" id="v-fS">12.0</span>
+              <button onclick="adj('fastSpeed',0.5)" aria-label="Increase">&plus;</button>
             </div>
           </div>
-          <div class="s-row">
-            <span class="s-label">Duration</span>
-            <div class="s-ctrl">
-              <button onclick="adj('cooldownTime',-30)" aria-label="Decrease cool down time">&minus;</button>
-              <span class="s-val" id="v-cooldownTime">3:00</span>
-              <button onclick="adj('cooldownTime',30)" aria-label="Increase cool down time">&plus;</button>
+          <div class="sr">
+            <span class="sr-label">Fast Duration</span>
+            <div class="sr-ctrl">
+              <button onclick="adj('fastTime',-10)" aria-label="Decrease">&minus;</button>
+              <span class="sr-val" id="v-fT">0:30</span>
+              <button onclick="adj('fastTime',10)" aria-label="Increase">&plus;</button>
+            </div>
+          </div>
+          <div class="sr">
+            <span class="sr-label">Slow Speed</span>
+            <div class="sr-ctrl">
+              <button onclick="adj('slowSpeed',-0.5)" aria-label="Decrease">&minus;</button>
+              <span class="sr-val" id="v-sS">7.0</span>
+              <button onclick="adj('slowSpeed',0.5)" aria-label="Increase">&plus;</button>
+            </div>
+          </div>
+          <div class="sr">
+            <span class="sr-label">Slow Duration</span>
+            <div class="sr-ctrl">
+              <button onclick="adj('slowTime',-10)" aria-label="Decrease">&minus;</button>
+              <span class="sr-val" id="v-sT">1:00</span>
+              <button onclick="adj('slowTime',10)" aria-label="Increase">&plus;</button>
+            </div>
+          </div>
+          <div class="sr">
+            <span class="sr-label">Cycles</span>
+            <div class="sr-ctrl">
+              <button onclick="adj('cycles',-1)" aria-label="Decrease">&minus;</button>
+              <span class="sr-val" id="v-cy">6</span>
+              <button onclick="adj('cycles',1)" aria-label="Increase">&plus;</button>
+            </div>
+          </div>
+        </div>
+        <div class="sg">
+          <div class="sg-t"><i style="background:var(--cool)"></i> Cool Down</div>
+          <div class="sr">
+            <span class="sr-label">Speed</span>
+            <div class="sr-ctrl">
+              <button onclick="adj('cooldownSpeed',-0.5)" aria-label="Decrease">&minus;</button>
+              <span class="sr-val" id="v-cS">5.0</span>
+              <button onclick="adj('cooldownSpeed',0.5)" aria-label="Increase">&plus;</button>
+            </div>
+          </div>
+          <div class="sr">
+            <span class="sr-label">Duration</span>
+            <div class="sr-ctrl">
+              <button onclick="adj('cooldownTime',-30)" aria-label="Decrease">&minus;</button>
+              <span class="sr-val" id="v-cT">3:00</span>
+              <button onclick="adj('cooldownTime',30)" aria-label="Increase">&plus;</button>
             </div>
           </div>
         </div>
@@ -650,470 +499,414 @@
     </div>
   </div>
 
-  <!-- Completion screen -->
+  <!-- Done -->
   <div class="done-screen" id="doneScreen">
-    <div class="done-icon">
+    <div class="done-badge">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
-    <div class="done-title">Workout Complete</div>
-    <div class="done-sub">Great run. You crushed it.</div>
+    <div class="done-h">Workout Complete</div>
+    <div class="done-p">Great run. You crushed it.</div>
     <div class="done-stats">
       <div class="done-stat">
-        <div class="done-stat-val" id="statTime">--:--</div>
-        <div class="done-stat-lbl">Total Time</div>
+        <div class="done-stat-v" id="statTime">--:--</div>
+        <div class="done-stat-l">Total Time</div>
       </div>
       <div class="done-stat">
-        <div class="done-stat-val" id="statCycles">--</div>
-        <div class="done-stat-lbl">Cycles</div>
+        <div class="done-stat-v" id="statCy">--</div>
+        <div class="done-stat-l">Cycles</div>
       </div>
     </div>
-    <button class="btn btn-primary" onclick="fullReset()" style="width:180px;">
+    <button class="btn-big btn-go" onclick="fullReset()" style="width:200px;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
       New Workout
     </button>
   </div>
 
-  <script>
-    // ═══════════════════════════════════════════
-    //  STATE
-    // ═══════════════════════════════════════════
-    const S = {
-      warmupSpeed: 6.0, warmupTime: 120,
-      fastSpeed: 12.0, fastTime: 30,
-      slowSpeed: 7.0, slowTime: 60,
-      cycles: 6,
-      cooldownSpeed: 5.0, cooldownTime: 180,
-    };
+<script>
+// ═══════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════
+const S = {
+  warmupSpeed:6, warmupTime:120,
+  fastSpeed:12, fastTime:30,
+  slowSpeed:7, slowTime:60,
+  cycles:6,
+  cooldownSpeed:5, cooldownTime:180,
+};
+const LIM = {
+  warmupSpeed:[2,15], warmupTime:[30,600],
+  fastSpeed:[5,25],   fastTime:[10,300],
+  slowSpeed:[2,15],   slowTime:[10,300],
+  cycles:[1,30],
+  cooldownSpeed:[2,15], cooldownTime:[30,600],
+};
 
-    const LIM = {
-      warmupSpeed:   [2,15],   warmupTime:   [30,600],
-      fastSpeed:     [5,25],   fastTime:     [10,300],
-      slowSpeed:     [2,15],   slowTime:     [10,300],
-      cycles:        [1,30],
-      cooldownSpeed: [2,15],   cooldownTime: [30,600],
-    };
+let phase='idle', timeLeft=0, totalT=0, cy=0;
+let tick=null, on=false, t0=null;
 
-    let phase = 'idle';
-    let timeLeft = 0, totalPhaseTime = 0, curCycle = 0;
-    let ticker = null, running = false, t0 = null;
+// ═══════════════════════════════════════
+//  AUDIO
+// ═══════════════════════════════════════
+let ac=null, nodes=[];
+function getAC(){ if(!ac) ac=new(window.AudioContext||window.webkitAudioContext); if(ac.state==='suspended') ac.resume(); return ac; }
+function stopAudio(){ nodes.forEach(n=>{try{n.stop()}catch(e){}}); nodes=[]; }
 
-    // ═══════════════════════════════════════════
-    //  AUDIO ENGINE
-    // ═══════════════════════════════════════════
-    let actx = null;
-    let activeSoundNodes = []; // track nodes to stop them
+// Morse dots — rapid staccato (sprint)
+function sndFast(){
+  stopAudio(); const c=getAC(), n=c.currentTime;
+  let t=n; const dur=5, on=0.07, gap=0.05;
+  while(t<n+dur){
+    const o=c.createOscillator(), g=c.createGain();
+    o.type='square'; o.frequency.value=880;
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.26,t+0.008);
+    g.gain.setValueAtTime(0.26,t+on-0.008);
+    g.gain.linearRampToValueAtTime(0,t+on);
+    o.connect(g).connect(c.destination);
+    o.start(t); o.stop(t+on+0.01); nodes.push(o);
+    t+=on+gap;
+  }
+}
 
-    function ctx() {
-      if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
-      if (actx.state === 'suspended') actx.resume();
-      return actx;
-    }
+// Morse dashes — slow sustained (recovery)
+function sndSlow(){
+  stopAudio(); const c=getAC(), n=c.currentTime;
+  let t=n; const dur=5, on=0.30, gap=0.20;
+  while(t<n+dur){
+    const o=c.createOscillator(), g=c.createGain();
+    o.type='sine'; o.frequency.value=440;
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.22,t+0.02);
+    g.gain.setValueAtTime(0.22,t+on-0.03);
+    g.gain.linearRampToValueAtTime(0,t+on);
+    o.connect(g).connect(c.destination);
+    o.start(t); o.stop(t+on+0.01); nodes.push(o);
+    t+=on+gap;
+  }
+}
 
-    function stopAllSounds() {
-      activeSoundNodes.forEach(n => { try { n.stop(); } catch(e){} });
-      activeSoundNodes = [];
-    }
+// Warmup start — ascending chimes
+function sndWarmup(){
+  stopAudio(); const c=getAC(), n=c.currentTime;
+  const notes=[392,440,523.25,587.33,659.25];
+  let t=n, i=0; const dur=5, on=0.4, gap=0.15;
+  while(t<n+dur){
+    const o=c.createOscillator(), g=c.createGain();
+    o.type='triangle'; o.frequency.value=notes[i%notes.length];
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.2,t+0.02);
+    g.gain.setValueAtTime(0.2,t+on-0.04);
+    g.gain.linearRampToValueAtTime(0,t+on);
+    o.connect(g).connect(c.destination);
+    o.start(t); o.stop(t+on+0.01); nodes.push(o);
+    t+=on+gap; i++;
+  }
+}
 
-    // ── Continuous morse-dot sound (FAST / sprint) ──
-    // Rapid short beeps for 5 seconds, ~100ms on / 60ms off
-    function playContinuousFast() {
-      stopAllSounds();
-      const c = ctx(), now = c.currentTime;
-      const dur = 5, onTime = 0.08, gap = 0.06, freq = 880;
-      let t = now;
-      while (t < now + dur) {
-        const o = c.createOscillator();
-        const g = c.createGain();
-        o.type = 'square';
-        o.frequency.value = freq;
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.28, t + 0.01);
-        g.gain.setValueAtTime(0.28, t + onTime - 0.01);
-        g.gain.linearRampToValueAtTime(0, t + onTime);
-        o.connect(g).connect(c.destination);
-        o.start(t);
-        o.stop(t + onTime + 0.01);
-        activeSoundNodes.push(o);
-        t += onTime + gap;
-      }
-    }
+// Training start — rising sweeps
+function sndTrainStart(){
+  stopAudio(); const c=getAC(), n=c.currentTime;
+  const dur=5, reps=8, rl=dur/reps;
+  for(let i=0;i<reps;i++){
+    const t=n+i*rl, o=c.createOscillator(), g=c.createGain();
+    o.type='sawtooth';
+    o.frequency.setValueAtTime(300,t);
+    o.frequency.exponentialRampToValueAtTime(900,t+rl*0.7);
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.18,t+0.02);
+    g.gain.setValueAtTime(0.18,t+rl*0.6);
+    g.gain.linearRampToValueAtTime(0,t+rl*0.9);
+    o.connect(g).connect(c.destination);
+    o.start(t); o.stop(t+rl); nodes.push(o);
+  }
+}
 
-    // ── Continuous morse-dash sound (SLOW / recovery) ──
-    // Longer tones for 5 seconds, ~300ms on / 200ms off
-    function playContinuousSlow() {
-      stopAllSounds();
-      const c = ctx(), now = c.currentTime;
-      const dur = 5, onTime = 0.30, gap = 0.20, freq = 440;
-      let t = now;
-      while (t < now + dur) {
-        const o = c.createOscillator();
-        const g = c.createGain();
-        o.type = 'sine';
-        o.frequency.value = freq;
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.25, t + 0.02);
-        g.gain.setValueAtTime(0.25, t + onTime - 0.03);
-        g.gain.linearRampToValueAtTime(0, t + onTime);
-        o.connect(g).connect(c.destination);
-        o.start(t);
-        o.stop(t + onTime + 0.01);
-        activeSoundNodes.push(o);
-        t += onTime + gap;
-      }
-    }
+// Cooldown — falling sweeps
+function sndCooldown(){
+  stopAudio(); const c=getAC(), n=c.currentTime;
+  const dur=5, reps=5, rl=dur/reps;
+  for(let i=0;i<reps;i++){
+    const t=n+i*rl, o=c.createOscillator(), g=c.createGain();
+    o.type='sine';
+    o.frequency.setValueAtTime(700,t);
+    o.frequency.exponentialRampToValueAtTime(280,t+rl*0.8);
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.2,t+0.02);
+    g.gain.setValueAtTime(0.2,t+rl*0.6);
+    g.gain.linearRampToValueAtTime(0,t+rl*0.95);
+    o.connect(g).connect(c.destination);
+    o.start(t); o.stop(t+rl); nodes.push(o);
+  }
+}
 
-    // ── Warm-up start: ascending continuous chime for 5s ──
-    function playContinuousWarmup() {
-      stopAllSounds();
-      const c = ctx(), now = c.currentTime;
-      const notes = [392, 440, 523.25, 587.33, 659.25]; // G4 A4 C5 D5 E5
-      const dur = 5, noteLen = 0.45, gap = 0.15;
-      let t = now;
-      let idx = 0;
-      while (t < now + dur) {
-        const o = c.createOscillator();
-        const g = c.createGain();
-        o.type = 'triangle';
-        o.frequency.value = notes[idx % notes.length];
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.22, t + 0.03);
-        g.gain.setValueAtTime(0.22, t + noteLen - 0.05);
-        g.gain.linearRampToValueAtTime(0, t + noteLen);
-        o.connect(g).connect(c.destination);
-        o.start(t);
-        o.stop(t + noteLen + 0.01);
-        activeSoundNodes.push(o);
-        t += noteLen + gap;
-        idx++;
-      }
-    }
+// Complete — triumphant loop
+function sndDone(){
+  stopAudio(); const c=getAC(), n=c.currentTime;
+  const mel=[523.25,659.25,783.99,1046.5];
+  let t=n, i=0; const dur=5, on=0.32, gap=0.1;
+  while(t<n+dur){
+    const o=c.createOscillator(), g=c.createGain();
+    o.type='sine'; o.frequency.value=mel[i%mel.length];
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.25,t+0.02);
+    g.gain.setValueAtTime(0.25,t+on-0.04);
+    g.gain.linearRampToValueAtTime(0,t+on);
+    o.connect(g).connect(c.destination);
+    o.start(t); o.stop(t+on+0.01); nodes.push(o);
+    t+=on+gap; i++;
+  }
+}
 
-    // ── Training start (warmup->training): urgent rising sweep 5s ──
-    function playContinuousTrainingStart() {
-      stopAllSounds();
-      const c = ctx(), now = c.currentTime;
-      // Repeating short rising sweeps
-      const dur = 5, reps = 8;
-      const repLen = dur / reps;
-      for (let i = 0; i < reps; i++) {
-        const t = now + i * repLen;
-        const o = c.createOscillator();
-        const g = c.createGain();
-        o.type = 'sawtooth';
-        o.frequency.setValueAtTime(300, t);
-        o.frequency.exponentialRampToValueAtTime(900, t + repLen * 0.7);
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.2, t + 0.02);
-        g.gain.setValueAtTime(0.2, t + repLen * 0.6);
-        g.gain.linearRampToValueAtTime(0, t + repLen * 0.9);
-        o.connect(g).connect(c.destination);
-        o.start(t);
-        o.stop(t + repLen);
-        activeSoundNodes.push(o);
-      }
-    }
+// 3-2-1 countdown beeps
+function sndCountdown(){
+  const c=getAC(), n=c.currentTime;
+  for(let i=0;i<3;i++){
+    const o=c.createOscillator(), g=c.createGain();
+    o.type='sine'; o.frequency.value= i<2 ? 660 : 990;
+    g.gain.setValueAtTime(0, n+i);
+    g.gain.linearRampToValueAtTime(0.3, n+i+0.02);
+    g.gain.setValueAtTime(0.3, n+i+0.12);
+    g.gain.linearRampToValueAtTime(0, n+i+0.2);
+    o.connect(g).connect(c.destination);
+    o.start(n+i); o.stop(n+i+0.25); nodes.push(o);
+  }
+}
 
-    // ── Training->cooldown: descending calm sweeps 5s ──
-    function playContinuousCooldownStart() {
-      stopAllSounds();
-      const c = ctx(), now = c.currentTime;
-      const dur = 5, reps = 5;
-      const repLen = dur / reps;
-      for (let i = 0; i < reps; i++) {
-        const t = now + i * repLen;
-        const o = c.createOscillator();
-        const g = c.createGain();
-        o.type = 'sine';
-        o.frequency.setValueAtTime(700, t);
-        o.frequency.exponentialRampToValueAtTime(280, t + repLen * 0.8);
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.22, t + 0.03);
-        g.gain.setValueAtTime(0.22, t + repLen * 0.6);
-        g.gain.linearRampToValueAtTime(0, t + repLen * 0.95);
-        o.connect(g).connect(c.destination);
-        o.start(t);
-        o.stop(t + repLen);
-        activeSoundNodes.push(o);
-      }
-    }
+// ═══════════════════════════════════════
+//  PULSE
+// ═══════════════════════════════════════
+let pt=null;
+function pulse(color){
+  const e=document.getElementById('pulse');
+  e.classList.remove('on');
+  e.style.setProperty('--pulse-c', color);
+  void e.offsetWidth;
+  e.classList.add('on');
+  if(pt) clearTimeout(pt);
+  pt=setTimeout(()=>e.classList.remove('on'), 5200);
+}
 
-    // ── Complete: triumphant repeating fanfare 5s ──
-    function playContinuousComplete() {
-      stopAllSounds();
-      const c = ctx(), now = c.currentTime;
-      const melody = [523.25, 659.25, 783.99, 1046.5];
-      const dur = 5, noteLen = 0.35, gap = 0.1;
-      let t = now, idx = 0;
-      while (t < now + dur) {
-        const o = c.createOscillator();
-        const g = c.createGain();
-        o.type = 'sine';
-        o.frequency.value = melody[idx % melody.length];
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.28, t + 0.03);
-        g.gain.setValueAtTime(0.28, t + noteLen - 0.05);
-        g.gain.linearRampToValueAtTime(0, t + noteLen);
-        o.connect(g).connect(c.destination);
-        o.start(t);
-        o.stop(t + noteLen + 0.01);
-        activeSoundNodes.push(o);
-        t += noteLen + gap;
-        idx++;
-      }
-    }
+// ═══════════════════════════════════════
+//  THEME
+// ═══════════════════════════════════════
+const r = document.documentElement.style;
+const TH = {
+  warmup()  { r.setProperty('--phase-bg','var(--warmup-bg)'); r.setProperty('--accent','var(--warmup)'); r.setProperty('--accent-dim','var(--warmup-dim)'); },
+  fast()    { r.setProperty('--phase-bg','var(--fast-bg)');   r.setProperty('--accent','var(--fast)');   r.setProperty('--accent-dim','var(--fast-dim)'); },
+  slow()    { r.setProperty('--phase-bg','var(--slow-bg)');   r.setProperty('--accent','var(--slow)');   r.setProperty('--accent-dim','var(--slow-dim)'); },
+  cooldown(){ r.setProperty('--phase-bg','var(--cool-bg)');   r.setProperty('--accent','var(--cool)');   r.setProperty('--accent-dim','var(--cool-dim)'); },
+  done()    { r.setProperty('--phase-bg','var(--bg)');        r.setProperty('--accent','var(--done)');   r.setProperty('--accent-dim','var(--done-dim)'); },
+  idle()    { r.setProperty('--phase-bg','var(--bg)');        r.setProperty('--accent','var(--warmup)'); r.setProperty('--accent-dim','var(--warmup-dim)'); },
+};
+const PC = { warmup:'#fbbf24', fast:'#f87171', slow:'#60a5fa', cooldown:'#22d3ee', done:'#34d399' };
 
-    // ═══════════════════════════════════════════
-    //  SCREEN PULSE
-    // ═══════════════════════════════════════════
-    let pulseTimer = null;
+// ═══════════════════════════════════════
+//  STRIP
+// ═══════════════════════════════════════
+function updStrip(){
+  const w=$('s-w'), t=$('s-t'), c=$('s-c');
+  w.className=t.className=c.className='';
+  if(phase==='warmup'){ w.className='on'; }
+  else if(phase==='fast'||phase==='slow'){ w.className='done'; t.className='on'; }
+  else if(phase==='cooldown'){ w.className='done'; t.className='done'; c.className='on'; }
+  else if(phase==='done'){ w.className='done'; t.className='done'; c.className='done'; }
+}
 
-    function triggerPulse(color) {
-      const el = document.getElementById('pulseRing');
-      el.classList.remove('active');
-      el.style.setProperty('--pulse-color', color);
-      // Force reflow to restart animation
-      void el.offsetWidth;
-      el.classList.add('active');
-      if (pulseTimer) clearTimeout(pulseTimer);
-      pulseTimer = setTimeout(() => el.classList.remove('active'), 5200);
-    }
+// ═══════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════
+const $=id=>document.getElementById(id);
 
-    // ═══════════════════════════════════════════
-    //  THEME
-    // ═══════════════════════════════════════════
-    function setAccent(color, glow) {
-      const r = document.documentElement.style;
-      r.setProperty('--accent', color);
-      r.setProperty('--accent-glow', glow);
-    }
+function adj(k,d){
+  if(on) return;
+  const [mn,mx]=LIM[k]; let v=S[k]+d;
+  v=Math.max(mn,Math.min(mx,v));
+  S[k]=k.includes('Speed')? Math.round(v*10)/10 : Math.round(v);
+  renderS();
+  if(phase==='idle') renderIdle();
+}
 
-    const THEMES = {
-      warmup:   () => setAccent('var(--warmup-color)',   'var(--warmup-glow)'),
-      fast:     () => setAccent('var(--fast-color)',      'var(--fast-glow)'),
-      slow:     () => setAccent('var(--slow-color)',      'var(--slow-glow)'),
-      cooldown: () => setAccent('var(--cooldown-color)',  'var(--cooldown-glow)'),
-      done:     () => setAccent('var(--done-color)',      'var(--done-glow)'),
-    };
+function fmt(s){ return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
+function fmtB(s){ return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
 
-    // Resolved hex colors for pulse (CSS vars don't work in box-shadow animation)
-    const PULSE_COLORS = {
-      warmup:   '#f59e0b',
-      fast:     '#ef4444',
-      slow:     '#3b82f6',
-      cooldown: '#06b6d4',
-      done:     '#10b981',
-    };
+function renderS(){
+  $('v-wS').textContent=S.warmupSpeed.toFixed(1);
+  $('v-wT').textContent=fmt(S.warmupTime);
+  $('v-fS').textContent=S.fastSpeed.toFixed(1);
+  $('v-fT').textContent=fmt(S.fastTime);
+  $('v-sS').textContent=S.slowSpeed.toFixed(1);
+  $('v-sT').textContent=fmt(S.slowTime);
+  $('v-cy').textContent=S.cycles;
+  $('v-cS').textContent=S.cooldownSpeed.toFixed(1);
+  $('v-cT').textContent=fmt(S.cooldownTime);
+}
 
-    // ═══════════════════════════════════════════
-    //  PHASE STRIP
-    // ═══════════════════════════════════════════
-    function updateStrip() {
-      const w = document.getElementById('strip-warmup');
-      const t = document.getElementById('strip-training');
-      const c = document.getElementById('strip-cooldown');
-      w.className = t.className = c.className = 'phase-strip-item';
-      if (phase === 'warmup') { w.classList.add('active'); }
-      else if (phase === 'fast' || phase === 'slow') { w.classList.add('completed'); t.classList.add('active'); }
-      else if (phase === 'cooldown') { w.classList.add('completed'); t.classList.add('completed'); c.classList.add('active'); }
-      else if (phase === 'done') { w.classList.add('completed'); t.classList.add('completed'); c.classList.add('completed'); }
-    }
+function renderIdle(){
+  $('countdown').textContent=fmtB(S.warmupTime);
+  $('speedNum').textContent=S.warmupSpeed.toFixed(1);
+}
 
-    // ═══════════════════════════════════════════
-    //  SETTINGS
-    // ═══════════════════════════════════════════
-    function adj(key, delta) {
-      if (running) return;
-      const [mn, mx] = LIM[key];
-      let v = S[key] + delta;
-      v = Math.max(mn, Math.min(mx, v));
-      S[key] = key.includes('Speed') ? Math.round(v * 10) / 10 : Math.round(v);
-      renderSettings();
-      if (phase === 'idle') renderIdle();
-    }
+// ═══════════════════════════════════════
+//  NEXT-UP PREVIEW
+// ═══════════════════════════════════════
+function showNext(){
+  const el=$('nextUp');
+  let name='', spd='';
+  switch(phase){
+    case 'warmup':
+      name='Sprint'; spd=S.fastSpeed.toFixed(1)+' km/h'; break;
+    case 'fast':
+      name='Recovery'; spd=S.slowSpeed.toFixed(1)+' km/h'; break;
+    case 'slow':
+      if(cy>=S.cycles){ name='Cool Down'; spd=S.cooldownSpeed.toFixed(1)+' km/h'; }
+      else { name='Sprint'; spd=S.fastSpeed.toFixed(1)+' km/h'; }
+      break;
+    case 'cooldown':
+      name='Finish'; spd=''; break;
+    default:
+      el.classList.remove('show'); return;
+  }
+  $('nextName').textContent=name;
+  $('nextSpeed').textContent=spd;
+  el.classList.add('show');
+}
 
-    function fmtT(s) { return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
-    function fmtBig(s) { return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
+// ═══════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════
+function render(){
+  $('countdown').textContent=fmtB(timeLeft);
+  let spd=0, pN='', mN='', showCy=false;
+  switch(phase){
+    case 'warmup':   spd=S.warmupSpeed;   pN='Warm Up';   TH.warmup();   break;
+    case 'fast':     spd=S.fastSpeed;     pN='Training';  mN='Sprint';   showCy=true; TH.fast(); break;
+    case 'slow':     spd=S.slowSpeed;     pN='Training';  mN='Recovery'; showCy=true; TH.slow(); break;
+    case 'cooldown': spd=S.cooldownSpeed; pN='Cool Down'; TH.cooldown(); break;
+  }
+  $('speedNum').textContent=spd.toFixed(1);
+  $('phaseName').textContent=pN;
+  $('modeName').textContent=mN||'\u00A0';
+  if(showCy){
+    $('cycleTag').style.display='block';
+    $('cyNow').textContent=cy;
+    $('cyTotal').textContent=S.cycles;
+  } else {
+    $('cycleTag').style.display='none';
+  }
+  const pct=totalT>0?(timeLeft/totalT)*100:100;
+  $('progFill').style.width=pct+'%';
+  updStrip();
+  showNext();
+}
 
-    function renderSettings() {
-      const $ = id => document.getElementById(id);
-      $('v-warmupSpeed').textContent = S.warmupSpeed.toFixed(1);
-      $('v-warmupTime').textContent  = fmtT(S.warmupTime);
-      $('v-fastSpeed').textContent   = S.fastSpeed.toFixed(1);
-      $('v-fastTime').textContent    = fmtT(S.fastTime);
-      $('v-slowSpeed').textContent   = S.slowSpeed.toFixed(1);
-      $('v-slowTime').textContent    = fmtT(S.slowTime);
-      $('v-cycles').textContent      = S.cycles;
-      $('v-cooldownSpeed').textContent = S.cooldownSpeed.toFixed(1);
-      $('v-cooldownTime').textContent  = fmtT(S.cooldownTime);
-    }
+// ═══════════════════════════════════════
+//  PHASE MACHINE
+// ═══════════════════════════════════════
+let countdownPlayed = false;
 
-    function renderIdle() {
-      document.getElementById('timeDisplay').textContent = fmtBig(S.warmupTime);
-      document.getElementById('speedDisplay').textContent = S.warmupSpeed.toFixed(1);
-    }
+function go(p){
+  phase=p;
+  countdownPlayed=false;
+  switch(p){
+    case 'warmup':
+      timeLeft=S.warmupTime; totalT=S.warmupTime; cy=0;
+      sndWarmup(); pulse(PC.warmup); break;
+    case 'fast':
+      cy++;
+      timeLeft=S.fastTime; totalT=S.fastTime;
+      cy===1 ? sndTrainStart() : sndFast();
+      pulse(PC.fast); break;
+    case 'slow':
+      timeLeft=S.slowTime; totalT=S.slowTime;
+      sndSlow(); pulse(PC.slow); break;
+    case 'cooldown':
+      timeLeft=S.cooldownTime; totalT=S.cooldownTime;
+      sndCooldown(); pulse(PC.cooldown); break;
+    case 'done': finish(); return;
+  }
+  render();
+}
 
-    // ═══════════════════════════════════════════
-    //  DISPLAY
-    // ═══════════════════════════════════════════
-    function render() {
-      document.getElementById('timeDisplay').textContent = fmtBig(timeLeft);
-      let spd = 0, pName = '', mName = '', showCy = false;
-      switch (phase) {
-        case 'warmup':   spd = S.warmupSpeed;   pName = 'Warm Up';   THEMES.warmup();   break;
-        case 'fast':     spd = S.fastSpeed;      pName = 'Training';  mName = 'Sprint';    showCy = true; THEMES.fast();   break;
-        case 'slow':     spd = S.slowSpeed;      pName = 'Training';  mName = 'Recovery';  showCy = true; THEMES.slow();   break;
-        case 'cooldown': spd = S.cooldownSpeed;  pName = 'Cool Down'; THEMES.cooldown(); break;
-      }
-      document.getElementById('speedDisplay').textContent = spd.toFixed(1);
-      document.getElementById('phaseLabel').textContent = pName;
-      document.getElementById('modeLabel').textContent = mName || '\u00A0';
-      const ci = document.getElementById('cycleInfo');
-      if (showCy) {
-        ci.style.display = 'block';
-        document.getElementById('curCycle').textContent = curCycle;
-        document.getElementById('totCycles').textContent = S.cycles;
-      } else {
-        ci.style.display = 'none';
-      }
-      const pct = totalPhaseTime > 0 ? (timeLeft / totalPhaseTime) * 100 : 100;
-      document.getElementById('progressBar').style.width = pct + '%';
-      updateStrip();
-    }
+function next(){
+  switch(phase){
+    case 'warmup':  go('fast'); break;
+    case 'fast':    go('slow'); break;
+    case 'slow':    cy>=S.cycles ? go('cooldown') : go('fast'); break;
+    case 'cooldown': go('done'); break;
+  }
+}
 
-    // ═══════════════════════════════════════════
-    //  PHASE TRANSITIONS
-    // ═══════════════════════════════════════════
-    function startPhase(p) {
-      phase = p;
-      switch (p) {
-        case 'warmup':
-          timeLeft = S.warmupTime;
-          totalPhaseTime = S.warmupTime;
-          curCycle = 0;
-          playContinuousWarmup();
-          triggerPulse(PULSE_COLORS.warmup);
-          break;
-        case 'fast':
-          curCycle++;
-          timeLeft = S.fastTime;
-          totalPhaseTime = S.fastTime;
-          if (curCycle === 1) {
-            playContinuousTrainingStart();
-          } else {
-            playContinuousFast();
-          }
-          triggerPulse(PULSE_COLORS.fast);
-          break;
-        case 'slow':
-          timeLeft = S.slowTime;
-          totalPhaseTime = S.slowTime;
-          playContinuousSlow();
-          triggerPulse(PULSE_COLORS.slow);
-          break;
-        case 'cooldown':
-          timeLeft = S.cooldownTime;
-          totalPhaseTime = S.cooldownTime;
-          playContinuousCooldownStart();
-          triggerPulse(PULSE_COLORS.cooldown);
-          break;
-        case 'done':
-          finish();
-          return;
-      }
-      render();
-    }
+function tickFn(){
+  if(!on) return;
+  timeLeft--;
+  // 3-2-1 countdown warning
+  if(timeLeft===3 && !countdownPlayed){
+    countdownPlayed=true;
+    sndCountdown();
+  }
+  if(timeLeft<=0) next();
+  else render();
+}
 
-    function next() {
-      switch (phase) {
-        case 'warmup':  startPhase('fast'); break;
-        case 'fast':    startPhase('slow'); break;
-        case 'slow':    curCycle >= S.cycles ? startPhase('cooldown') : startPhase('fast'); break;
-        case 'cooldown': startPhase('done'); break;
-      }
-    }
+// ═══════════════════════════════════════
+//  CONTROLS
+// ═══════════════════════════════════════
+const ico = {
+  play:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>',
+};
 
-    function tick() {
-      if (!running) return;
-      timeLeft--;
-      if (timeLeft <= 0) next();
-      else render();
-    }
+function start(){
+  const btn=$('btnGo');
+  if(on){
+    on=false; clearInterval(tick); stopAudio();
+    btn.innerHTML=ico.play+' Resume'; return;
+  }
+  getAC();
+  if(phase==='idle'||phase==='done'){
+    t0=Date.now(); on=true;
+    go('warmup');
+    $('settings').classList.add('collapsed');
+    $('btnReset').style.display='';
+  } else { on=true; }
+  btn.innerHTML=ico.pause+' Pause';
+  clearInterval(tick);
+  tick=setInterval(tickFn, 1000);
+}
 
-    // ═══════════════════════════════════════════
-    //  CONTROLS
-    // ═══════════════════════════════════════════
-    const playIcon  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-    const pauseIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+function reset(){
+  on=false; clearInterval(tick); stopAudio();
+  phase='idle'; timeLeft=totalT=cy=0;
+  $('settings').classList.remove('collapsed');
+  $('btnReset').style.display='none';
+  $('btnGo').innerHTML=ico.play+' Start';
+  $('phaseName').textContent='Warm Up';
+  $('modeName').textContent='\u00A0';
+  $('cycleTag').style.display='none';
+  $('progFill').style.width='100%';
+  $('pulse').classList.remove('on');
+  $('nextUp').classList.remove('show');
+  TH.idle(); updStrip(); renderIdle();
+}
 
-    function startTimer() {
-      const btn = document.getElementById('btnStart');
-      if (running) {
-        running = false;
-        clearInterval(ticker);
-        stopAllSounds();
-        btn.innerHTML = playIcon + ' Resume';
-        return;
-      }
-      ctx(); // ensure audio ready
-      if (phase === 'idle' || phase === 'done') {
-        t0 = Date.now();
-        running = true;
-        startPhase('warmup');
-        document.getElementById('settingsPanel').classList.add('disabled');
-        document.getElementById('btnReset').style.display = '';
-      } else {
-        running = true;
-      }
-      btn.innerHTML = pauseIcon + ' Pause';
-      clearInterval(ticker);
-      ticker = setInterval(tick, 1000);
-    }
+function finish(){
+  on=false; clearInterval(tick);
+  phase='done';
+  sndDone(); pulse(PC.done); TH.done(); updStrip();
+  const el=Math.round((Date.now()-t0)/1000);
+  $('statTime').textContent=fmtB(el);
+  $('statCy').textContent=S.cycles;
+  setTimeout(()=>$('doneScreen').classList.add('on'), 2500);
+}
 
-    function resetTimer() {
-      running = false;
-      clearInterval(ticker);
-      stopAllSounds();
-      phase = 'idle';
-      timeLeft = totalPhaseTime = curCycle = 0;
-      document.getElementById('settingsPanel').classList.remove('disabled');
-      document.getElementById('btnReset').style.display = 'none';
-      document.getElementById('btnStart').innerHTML = playIcon + ' Start';
-      document.getElementById('phaseLabel').textContent = 'Warm Up';
-      document.getElementById('modeLabel').textContent = '\u00A0';
-      document.getElementById('cycleInfo').style.display = 'none';
-      document.getElementById('progressBar').style.width = '100%';
-      document.getElementById('pulseRing').classList.remove('active');
-      THEMES.warmup();
-      updateStrip();
-      renderIdle();
-    }
+function fullReset(){
+  $('doneScreen').classList.remove('on');
+  reset();
+}
 
-    function finish() {
-      running = false;
-      clearInterval(ticker);
-      phase = 'done';
-      playContinuousComplete();
-      triggerPulse(PULSE_COLORS.done);
-      THEMES.done();
-      updateStrip();
-      const elapsed = Math.round((Date.now() - t0) / 1000);
-      document.getElementById('statTime').textContent = fmtBig(elapsed);
-      document.getElementById('statCycles').textContent = S.cycles;
-      setTimeout(() => document.getElementById('doneScreen').classList.add('active'), 2500);
-    }
-
-    function fullReset() {
-      document.getElementById('doneScreen').classList.remove('active');
-      resetTimer();
-    }
-
-    // ═══════════════════════════════════════════
-    //  INIT
-    // ═══════════════════════════════════════════
-    document.getElementById('btnStart').addEventListener('click', startTimer);
-    document.getElementById('btnReset').addEventListener('click', resetTimer);
-    renderSettings();
-    renderIdle();
-  </script>
+$('btnGo').addEventListener('click', start);
+$('btnReset').addEventListener('click', reset);
+renderS(); renderIdle();
+</script>
 </body>
 </html>
