@@ -66,7 +66,7 @@
 
     /* ── Pulse ── */
     .pulse { position:fixed; inset:0; pointer-events:none; z-index:90; opacity:0; }
-    .pulse.on { animation: gp 1s ease-in-out 5; }
+    .pulse.on { animation: gp 0.6s ease-in-out 2; }
     @keyframes gp {
       0%   { opacity:0; box-shadow: inset 0 0 100px 30px var(--pc); }
       35%  { opacity:1; box-shadow: inset 0 0 180px 60px var(--pc); }
@@ -579,94 +579,89 @@ let ac=null, nodes=[];
 function getAC(){ if(!ac) ac=new(window.AudioContext||window.webkitAudioContext); if(ac.state==='suspended') ac.resume(); return ac; }
 function stopAudio(){ nodes.forEach(n=>{try{n.stop()}catch(e){}}); nodes=[]; }
 
+// Helper: play a tone with optional pitch sweep
+function tone(freq, dur, type, vol, endFreq){
+  const c=getAC(), t=c.currentTime;
+  const o=c.createOscillator(), g=c.createGain();
+  o.type=type; o.frequency.setValueAtTime(freq,t);
+  if(endFreq) o.frequency.exponentialRampToValueAtTime(endFreq,t+dur*0.8);
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(vol,t+0.015);
+  g.gain.setValueAtTime(vol,t+dur*0.6);
+  g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.connect(g).connect(c.destination);
+  o.start(t); o.stop(t+dur+0.01); nodes.push(o);
+}
+
+// Helper: play a sequence of short tones
+function seq(notes, gap, type, vol){
+  stopAudio(); const c=getAC(), now=c.currentTime;
+  notes.forEach((n,i)=>{
+    const t=now+i*gap, o=c.createOscillator(), g=c.createGain();
+    o.type=type; o.frequency.value=n.f;
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(vol,t+0.01);
+    g.gain.setValueAtTime(vol,t+n.d*0.5);
+    g.gain.exponentialRampToValueAtTime(0.001,t+n.d);
+    o.connect(g).connect(c.destination);
+    o.start(t); o.stop(t+n.d+0.01); nodes.push(o);
+  });
+}
+
+// Sprint: 3 rapid ascending pips (~0.6s total)
 function sndFast(){
-  stopAudio(); const c=getAC(), n=c.currentTime;
-  let t=n; const dur=5, onT=0.07, gap=0.05;
-  while(t<n+dur){
-    const o=c.createOscillator(), g=c.createGain();
-    o.type='square'; o.frequency.value=880;
-    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.26,t+0.008);
-    g.gain.setValueAtTime(0.26,t+onT-0.008); g.gain.linearRampToValueAtTime(0,t+onT);
-    o.connect(g).connect(c.destination); o.start(t); o.stop(t+onT+0.01); nodes.push(o);
-    t+=onT+gap;
-  }
+  seq([
+    {f:880,d:0.08},{f:1100,d:0.08},{f:1320,d:0.12}
+  ], 0.14, 'sine', 0.3);
 }
 
+// Recovery: 2 soft descending tones (~0.5s total)
 function sndSlow(){
-  stopAudio(); const c=getAC(), n=c.currentTime;
-  let t=n; const dur=5, onT=0.30, gap=0.20;
-  while(t<n+dur){
-    const o=c.createOscillator(), g=c.createGain();
-    o.type='sine'; o.frequency.value=440;
-    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.22,t+0.02);
-    g.gain.setValueAtTime(0.22,t+onT-0.03); g.gain.linearRampToValueAtTime(0,t+onT);
-    o.connect(g).connect(c.destination); o.start(t); o.stop(t+onT+0.01); nodes.push(o);
-    t+=onT+gap;
-  }
+  seq([
+    {f:660,d:0.15},{f:440,d:0.2}
+  ], 0.25, 'sine', 0.22);
 }
 
+// Warmup: gentle rising chime (~0.6s)
 function sndWarmup(){
-  stopAudio(); const c=getAC(), n=c.currentTime;
-  const notes=[392,440,523.25,587.33,659.25];
-  let t=n, i=0; const dur=5, onT=0.4, gap=0.15;
-  while(t<n+dur){
-    const o=c.createOscillator(), g=c.createGain();
-    o.type='triangle'; o.frequency.value=notes[i%notes.length];
-    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.2,t+0.02);
-    g.gain.setValueAtTime(0.2,t+onT-0.04); g.gain.linearRampToValueAtTime(0,t+onT);
-    o.connect(g).connect(c.destination); o.start(t); o.stop(t+onT+0.01); nodes.push(o);
-    t+=onT+gap; i++;
-  }
+  seq([
+    {f:523,d:0.12},{f:659,d:0.12},{f:784,d:0.18}
+  ], 0.18, 'triangle', 0.2);
 }
 
+// Training start: urgent double-hit (~0.4s)
 function sndTrainStart(){
-  stopAudio(); const c=getAC(), n=c.currentTime;
-  const dur=5, reps=8, rl=dur/reps;
-  for(let i=0;i<reps;i++){
-    const t=n+i*rl, o=c.createOscillator(), g=c.createGain();
-    o.type='sawtooth'; o.frequency.setValueAtTime(300,t);
-    o.frequency.exponentialRampToValueAtTime(900,t+rl*0.7);
-    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.18,t+0.02);
-    g.gain.setValueAtTime(0.18,t+rl*0.6); g.gain.linearRampToValueAtTime(0,t+rl*0.9);
-    o.connect(g).connect(c.destination); o.start(t); o.stop(t+rl); nodes.push(o);
-  }
+  seq([
+    {f:740,d:0.1},{f:988,d:0.15}
+  ], 0.18, 'sine', 0.3);
 }
 
+// Cooldown: 2 calm descending notes (~0.6s)
 function sndCooldown(){
-  stopAudio(); const c=getAC(), n=c.currentTime;
-  const dur=5, reps=5, rl=dur/reps;
-  for(let i=0;i<reps;i++){
-    const t=n+i*rl, o=c.createOscillator(), g=c.createGain();
-    o.type='sine'; o.frequency.setValueAtTime(700,t);
-    o.frequency.exponentialRampToValueAtTime(280,t+rl*0.8);
-    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.2,t+0.02);
-    g.gain.setValueAtTime(0.2,t+rl*0.6); g.gain.linearRampToValueAtTime(0,t+rl*0.95);
-    o.connect(g).connect(c.destination); o.start(t); o.stop(t+rl); nodes.push(o);
-  }
+  seq([
+    {f:784,d:0.18},{f:523,d:0.25}
+  ], 0.28, 'sine', 0.2);
 }
 
+// Done: major chord arpeggio + resolve (~0.9s)
 function sndDone(){
-  stopAudio(); const c=getAC(), n=c.currentTime;
-  const mel=[523.25,659.25,783.99,1046.5];
-  let t=n, i=0; const dur=5, onT=0.32, gap=0.1;
-  while(t<n+dur){
-    const o=c.createOscillator(), g=c.createGain();
-    o.type='sine'; o.frequency.value=mel[i%mel.length];
-    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.25,t+0.02);
-    g.gain.setValueAtTime(0.25,t+onT-0.04); g.gain.linearRampToValueAtTime(0,t+onT);
-    o.connect(g).connect(c.destination); o.start(t); o.stop(t+onT+0.01); nodes.push(o);
-    t+=onT+gap; i++;
-  }
+  seq([
+    {f:523,d:0.12},{f:659,d:0.12},{f:784,d:0.12},{f:1047,d:0.3}
+  ], 0.18, 'sine', 0.25);
 }
 
+// Countdown: 3 ticks at 1s intervals, last one higher
 function sndCountdown(){
   const c=getAC(), n=c.currentTime;
   for(let i=0;i<3;i++){
-    const o=c.createOscillator(), g=c.createGain();
+    const t=n+i, o=c.createOscillator(), g=c.createGain();
     o.type='sine'; o.frequency.value= i<2 ? 660 : 990;
-    g.gain.setValueAtTime(0,n+i); g.gain.linearRampToValueAtTime(0.3,n+i+0.02);
-    g.gain.setValueAtTime(0.3,n+i+0.12); g.gain.linearRampToValueAtTime(0,n+i+0.2);
-    o.connect(g).connect(c.destination); o.start(n+i); o.stop(n+i+0.25); nodes.push(o);
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.28,t+0.01);
+    g.gain.setValueAtTime(0.28,t+0.06);
+    g.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+    o.connect(g).connect(c.destination);
+    o.start(t); o.stop(t+0.2); nodes.push(o);
   }
 }
 
@@ -677,7 +672,7 @@ function pulse(c){
   e.style.setProperty('--pc',c); void e.offsetWidth;
   e.classList.add('on');
   if(pt) clearTimeout(pt);
-  pt=setTimeout(()=>e.classList.remove('on'), 5200);
+  pt=setTimeout(()=>e.classList.remove('on'), 1400);
 }
 
 // ── Theme ──
