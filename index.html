@@ -6,262 +6,301 @@
   <title>HIIT Runner</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
     :root {
-      --bg: #07090f;
-      --card: rgba(255,255,255,0.04);
-      --border: rgba(255,255,255,0.07);
-      --text: #f0f2f5;
-      --text2: #a0aab8;
-      --text3: #6b7a8d;
+      --bg: #0b0b0f;
+      --surface: rgba(255,255,255,0.035);
+      --line: rgba(255,255,255,0.06);
+      --t1: #edeef1;
+      --t2: #8b93a1;
+      --t3: #505868;
 
-      /* Phase palette — background tints + accent */
-      --warmup-bg: #1a1508;
-      --warmup: #fbbf24;
-      --warmup-dim: rgba(251,191,36,0.15);
+      /* Phase system */
+      --warmup: #f0a830;
+      --warmup-bg: #18140a;
+      --warmup-glow: rgba(240,168,48,0.12);
 
-      --fast-bg: #1c0a0a;
-      --fast: #f87171;
-      --fast-dim: rgba(248,113,113,0.15);
+      --sprint: #ff4d4d;
+      --sprint-bg: #1a0a0a;
+      --sprint-glow: rgba(255,77,77,0.14);
 
-      --slow-bg: #0a0f1c;
-      --slow: #60a5fa;
-      --slow-dim: rgba(96,165,250,0.15);
+      --recover: #4da6ff;
+      --recover-bg: #0a0e1a;
+      --recover-glow: rgba(77,166,255,0.12);
 
-      --cool-bg: #081415;
-      --cool: #22d3ee;
-      --cool-dim: rgba(34,211,238,0.15);
+      --cool: #00d4aa;
+      --cool-bg: #0a1614;
+      --cool-glow: rgba(0,212,170,0.12);
 
-      --done: #34d399;
-      --done-dim: rgba(52,211,153,0.15);
+      --done-c: #34d399;
 
-      /* Active theme (set by JS) */
-      --phase-bg: var(--bg);
-      --accent: var(--warmup);
-      --accent-dim: var(--warmup-dim);
+      /* Active */
+      --a: var(--warmup);
+      --a-bg: var(--bg);
+      --a-glow: var(--warmup-glow);
+
+      --ring-size: min(70vw, 300px);
     }
 
-    html { height: 100%; }
+    html { height:100%; }
 
     body {
-      font-family: 'Outfit', sans-serif;
-      background: var(--phase-bg);
-      color: var(--text);
+      font-family: 'Manrope', sans-serif;
+      background: var(--a-bg);
+      color: var(--t1);
       min-height: 100dvh;
-      overflow-y: auto;
-      overflow-x: hidden;
+      overflow-y: auto; overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
-      transition: background 0.8s ease;
-      display: flex;
-      justify-content: center;
+      transition: background 0.9s ease;
+      display: flex; justify-content: center;
     }
 
-    /* ── Pulse overlay ── */
-    .pulse {
+    /* ── Grain texture overlay ── */
+    body::after {
+      content: '';
       position: fixed; inset: 0;
-      pointer-events: none; z-index: 90;
-      opacity: 0;
-    }
-    .pulse.on {
-      animation: glow-pulse 1s ease-in-out 5;
-    }
-    @keyframes glow-pulse {
-      0%   { opacity: 0; box-shadow: inset 0 0 60px 15px var(--pulse-c); }
-      35%  { opacity: 1; box-shadow: inset 0 0 120px 40px var(--pulse-c); }
-      100% { opacity: 0; box-shadow: inset 0 0 60px 15px var(--pulse-c); }
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      background-size: 200px;
+      pointer-events: none; z-index: 100;
+      opacity: 0.5;
     }
 
-    /* ── App shell ── */
+    /* ── Pulse ── */
+    .pulse { position:fixed; inset:0; pointer-events:none; z-index:90; opacity:0; }
+    .pulse.on { animation: gp 1s ease-in-out 5; }
+    @keyframes gp {
+      0%   { opacity:0; box-shadow: inset 0 0 80px 20px var(--pc); }
+      35%  { opacity:1; box-shadow: inset 0 0 150px 50px var(--pc); }
+      100% { opacity:0; box-shadow: inset 0 0 80px 20px var(--pc); }
+    }
+
+    /* ── Ambient glow behind ring ── */
+    .glow {
+      position: fixed;
+      top: 30%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, var(--a-glow) 0%, transparent 70%);
+      pointer-events: none; z-index: 0;
+      transition: background 0.9s;
+      filter: blur(40px);
+    }
+
     .app {
-      width: 100%; max-width: 420px;
-      padding: 12px 16px env(safe-area-inset-bottom, 16px);
-      display: flex; flex-direction: column;
-      min-height: 100dvh;
-      position: relative; z-index: 1;
+      width:100%; max-width:420px;
+      padding: 12px 20px env(safe-area-inset-bottom, 20px);
+      display:flex; flex-direction:column;
+      min-height:100dvh;
+      position:relative; z-index:1;
     }
 
-    /* ── Thin phase strip ── */
-    .strip { display: flex; gap: 4px; margin-bottom: 10px; flex-shrink: 0; }
+    /* ── Phase strip ── */
+    .strip { display:flex; gap:4px; margin-bottom:6px; flex-shrink:0; }
     .strip i {
-      flex: 1; height: 3px; border-radius: 2px;
-      background: var(--border); transition: all 0.5s;
-      font-style: normal;
+      flex:1; height:3px; border-radius:2px;
+      background: var(--line); transition: all 0.5s;
+      font-style:normal;
     }
-    .strip i.on  { background: var(--accent); box-shadow: 0 0 8px var(--accent-dim); }
-    .strip i.done { background: var(--text3); }
+    .strip i.on  { background:var(--a); box-shadow: 0 0 10px var(--a-glow); }
+    .strip i.done { background:var(--t3); }
 
-    /* ═══════════════════════════
-       TIMER — the hero element
-       ═══════════════════════════ */
-    .timer {
+    /* ═══════════════════════════════════
+       THE RING — the hero, the signature
+       ═══════════════════════════════════ */
+    .hero {
       flex: 1;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      text-align: center;
-      padding: 8px 0;
       min-height: 0;
+      position: relative;
     }
 
-    .phase-name {
-      font-size: 1.1rem; font-weight: 700;
-      letter-spacing: 0.14em; text-transform: uppercase;
-      color: var(--accent);
+    .ring-wrap {
+      position: relative;
+      width: var(--ring-size); height: var(--ring-size);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .ring-svg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .ring-track {
+      fill: none;
+      stroke: var(--line);
+      stroke-width: 4;
+    }
+
+    .ring-progress {
+      fill: none;
+      stroke: var(--a);
+      stroke-width: 5;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.4s linear, stroke 0.6s;
+      filter: drop-shadow(0 0 8px var(--a-glow));
+    }
+
+    /* Center content inside ring */
+    .ring-content {
+      position: relative; z-index: 2;
+      text-align: center;
+    }
+
+    .phase-label {
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.72rem; font-weight: 800;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--a);
       transition: color 0.6s;
       margin-bottom: 2px;
     }
 
-    .mode-name {
-      font-size: 0.85rem; font-weight: 600;
+    .mode-label {
+      font-size: 0.68rem; font-weight: 600;
       letter-spacing: 0.06em; text-transform: uppercase;
-      color: var(--text2);
-      min-height: 1.2em;
-      margin-bottom: 12px;
+      color: var(--t2);
+      min-height: 1em;
+      margin-bottom: 6px;
     }
 
     .countdown {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 6rem; font-weight: 800;
-      line-height: 1; letter-spacing: -0.03em;
-      color: var(--text);
-      margin-bottom: 12px;
-      /* Prevent layout shift from digit width changes */
-      font-variant-numeric: tabular-nums;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 5.5rem;
+      line-height: 0.85;
+      color: var(--t1);
+      letter-spacing: 0.02em;
     }
 
-    .speed {
-      display: flex; align-items: baseline; gap: 8px;
-      margin-bottom: 8px;
+    .speed-line {
+      display: flex; align-items: baseline; gap: 6px;
+      margin-top: 6px;
     }
-    .speed-num {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 2.6rem; font-weight: 700;
-      color: var(--accent);
+
+    .speed-v {
+      font-family: 'DM Mono', monospace;
+      font-size: 1.8rem; font-weight: 500;
+      color: var(--a);
       transition: color 0.6s;
-      font-variant-numeric: tabular-nums;
-    }
-    .speed-unit {
-      font-size: 0.95rem; font-weight: 500;
-      color: var(--text3);
     }
 
-    .cycle-tag {
-      font-size: 0.8rem; font-weight: 600;
-      color: var(--text3);
+    .speed-u {
+      font-size: 0.7rem; font-weight: 500;
+      color: var(--t3);
       letter-spacing: 0.04em;
-      margin-bottom: 10px;
     }
-    .cycle-tag b { color: var(--text2); }
 
-    /* Progress bar */
-    .prog { width: 100%; max-width: 280px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
-    .prog-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s linear, background 0.6s; width: 100%; }
+    /* Below ring */
+    .meta {
+      text-align: center;
+      font-size: 0.72rem; font-weight: 600;
+      color: var(--t3);
+      letter-spacing: 0.04em;
+    }
+    .meta b { color: var(--t2); }
 
-    /* ── Next-up preview ── */
-    .next-up {
-      margin-top: 14px;
-      padding: 8px 16px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 0.78rem;
-      font-weight: 500;
-      color: var(--text3);
+    .next-pill {
+      margin-top: 10px;
       display: none;
-      gap: 6px;
-      align-items: center;
+      align-items: center; gap: 8px;
+      padding: 7px 14px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 100px;
+      font-size: 0.7rem; font-weight: 600;
+      color: var(--t3);
     }
-    .next-up.show { display: flex; }
-    .next-up b { color: var(--text2); font-weight: 600; }
-    .next-label { margin-right: auto; }
+    .next-pill.show { display: inline-flex; }
+    .next-pill b { color: var(--t2); }
+    .next-arrow { color: var(--t3); font-size: 0.6rem; }
 
-    /* ═══════════════════
+    /* ═════════════
        CONTROLS
-       ═══════════════════ */
+       ═════════════ */
     .ctrls {
       flex-shrink: 0;
       display: flex; flex-direction: column; gap: 8px;
-      padding-top: 8px;
+      padding-top: 6px;
     }
 
-    .btn-big {
-      width: 100%; height: 64px;
+    .btn-go {
+      width: 100%; height: 60px;
       border: none; border-radius: 14px;
-      font-family: 'Outfit', sans-serif;
-      font-size: 1.05rem; font-weight: 700;
-      letter-spacing: 0.03em;
+      font-family: 'Manrope', sans-serif;
+      font-size: 1rem; font-weight: 800;
+      letter-spacing: 0.05em; text-transform: uppercase;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 10px;
       -webkit-tap-highlight-color: transparent;
-      transition: all 0.2s;
+      background: var(--a); color: var(--bg);
+      box-shadow: 0 8px 30px var(--a-glow);
+      transition: all 0.3s;
     }
-    .btn-big:active { transform: scale(0.98); }
-    .btn-big svg { width: 22px; height: 22px; }
-
-    .btn-go {
-      background: var(--accent); color: var(--bg);
-      box-shadow: 0 6px 24px var(--accent-dim);
-      transition: background 0.6s, box-shadow 0.6s;
-    }
+    .btn-go:active { transform: scale(0.97); }
     .btn-go:hover { filter: brightness(1.08); }
+    .btn-go svg { width: 20px; height: 20px; }
 
     .btn-reset {
-      height: 44px; border-radius: 10px;
-      background: var(--card); color: var(--text3);
-      border: 1px solid var(--border);
-      font-size: 0.85rem; font-weight: 600;
+      width: 100%; height: 40px;
+      border: 1px solid var(--line); border-radius: 10px;
+      background: transparent; color: var(--t3);
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.78rem; font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
     }
-    .btn-reset:hover { background: rgba(255,255,255,0.08); color: var(--text2); }
+    .btn-reset:hover { background: var(--surface); color: var(--t2); }
+    .btn-reset:active { transform: scale(0.97); }
+    .btn-reset svg { width: 16px; height: 16px; }
 
-    /* ═══════════════════
-       SETTINGS (idle only)
-       ═══════════════════ */
+    /* ═════════════
+       SETTINGS
+       ═════════════ */
     .settings {
-      background: var(--card);
-      border: 1px solid var(--border);
+      margin-top: 10px;
+      border: 1px solid var(--line);
       border-radius: 14px;
       overflow: hidden;
-      margin-top: 10px;
-      transition: all 0.4s ease;
+      background: var(--surface);
+      transition: all 0.4s;
     }
-
-    /* Collapse during workout */
     .settings.collapsed {
-      max-height: 0 !important;
-      opacity: 0;
-      margin: 0;
-      border: none;
-      pointer-events: none;
-      overflow: hidden;
+      max-height: 0 !important; opacity: 0;
+      margin: 0; border: none; pointer-events: none;
     }
 
     .settings-hdr {
       padding: 10px 16px 8px;
-      font-size: 0.65rem; font-weight: 700;
-      letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--text3);
-      border-bottom: 1px solid var(--border);
+      font-size: 0.6rem; font-weight: 800;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--t3);
+      border-bottom: 1px solid var(--line);
     }
 
     .settings-body {
-      overflow-y: auto;
-      max-height: 50vh;
+      overflow-y: auto; max-height: 45vh;
       -webkit-overflow-scrolling: touch;
     }
 
     .sg {
       padding: 8px 16px 10px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--line);
     }
     .sg:last-child { border-bottom: none; }
 
     .sg-t {
-      font-size: 0.62rem; font-weight: 700;
-      letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--text3); margin-bottom: 4px;
-      display: flex; align-items: center; gap: 5px;
+      font-size: 0.58rem; font-weight: 800;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--t3); margin-bottom: 2px;
+      display: flex; align-items: center; gap: 6px;
     }
     .sg-t i {
       width: 6px; height: 6px; border-radius: 50%;
@@ -271,94 +310,91 @@
     .sr {
       display: flex; align-items: center;
       justify-content: space-between;
-      height: 38px;
+      height: 36px;
     }
+    .sr-l { font-size: 0.78rem; font-weight: 500; color: var(--t2); }
 
-    .sr-label {
-      font-size: 0.82rem; font-weight: 500; color: var(--text2);
-    }
+    .sr-c { display: flex; align-items: center; gap: 2px; }
 
-    .sr-ctrl {
-      display: flex; align-items: center; gap: 2px;
-    }
-
-    .sr-ctrl button {
+    .sr-c button {
       width: 36px; height: 36px;
-      /* Accessible touch area larger than visual */
       min-width: 44px; min-height: 44px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.03);
-      color: var(--text2);
-      border-radius: 8px;
-      font-size: 1.15rem; font-weight: 600;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--t2); border-radius: 8px;
+      font-size: 1.1rem; font-weight: 600;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: all 0.15s;
       -webkit-tap-highlight-color: transparent;
     }
-    .sr-ctrl button:hover { background: rgba(255,255,255,0.08); color: var(--text); }
-    .sr-ctrl button:active { transform: scale(0.92); }
+    .sr-c button:hover { background: rgba(255,255,255,0.06); color: var(--t1); }
+    .sr-c button:active { transform: scale(0.9); }
 
-    .sr-val {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem; font-weight: 600;
-      color: var(--text);
-      min-width: 40px; text-align: center;
+    .sr-v {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem; font-weight: 500;
+      color: var(--t1);
+      min-width: 38px; text-align: center;
     }
 
-    /* ═══════════════════
-       DONE SCREEN
-       ═══════════════════ */
-    .done-screen {
-      position: fixed; inset: 0; z-index: 50;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
+    /* ═════════════
+       DONE
+       ═════════════ */
+    .done {
+      position:fixed; inset:0; z-index:50;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
       background: var(--bg);
-      opacity: 0; pointer-events: none;
+      opacity:0; pointer-events:none;
       transition: opacity 0.6s;
     }
-    .done-screen.on { opacity: 1; pointer-events: auto; }
+    .done.on { opacity:1; pointer-events:auto; }
 
-    .done-badge {
-      width: 96px; height: 96px; border-radius: 50%;
-      background: var(--done);
+    .done-ring {
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      border: 3px solid var(--done-c);
       display: flex; align-items: center; justify-content: center;
       margin-bottom: 24px;
-      box-shadow: 0 0 60px var(--done-dim);
+      box-shadow: 0 0 50px rgba(52,211,153,0.15), inset 0 0 30px rgba(52,211,153,0.05);
     }
-    .done-badge svg { width: 48px; height: 48px; color: var(--bg); }
+    .done-ring svg { width: 48px; height: 48px; color: var(--done-c); }
 
-    .done-h { font-size: 2rem; font-weight: 800; margin-bottom: 6px; }
-    .done-p { font-size: 0.95rem; color: var(--text2); margin-bottom: 32px; }
+    .done-h {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.4rem; letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+    .done-p { font-size: 0.9rem; color: var(--t2); margin-bottom: 32px; }
 
-    .done-stats { display: flex; gap: 32px; margin-bottom: 36px; }
-    .done-stat { text-align: center; }
+    .done-stats { display:flex; gap:40px; margin-bottom:36px; }
+    .done-stat { text-align:center; }
     .done-stat-v {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 1.4rem; font-weight: 700; color: var(--done);
+      font-family: 'DM Mono', monospace;
+      font-size: 1.4rem; font-weight: 500; color: var(--done-c);
     }
     .done-stat-l {
-      font-size: 0.7rem; color: var(--text3);
-      text-transform: uppercase; letter-spacing: 0.08em;
+      font-size: 0.62rem; font-weight: 700; color: var(--t3);
+      text-transform: uppercase; letter-spacing: 0.1em;
     }
 
-    /* ═══════════════════
+    /* ═════════════
        RESPONSIVE
-       ═══════════════════ */
-    @media (max-height: 640px) {
-      .countdown { font-size: 4.5rem; }
-      .speed-num { font-size: 2rem; }
-      .phase-name { font-size: 0.95rem; }
-      .btn-big { height: 56px; }
+       ═════════════ */
+    @media (max-height: 680px) {
+      :root { --ring-size: min(60vw, 240px); }
+      .countdown { font-size: 4.2rem; }
+      .speed-v { font-size: 1.5rem; }
+      .btn-go { height: 54px; }
     }
-
-    @media (max-height: 520px) {
+    @media (max-height: 560px) {
+      :root { --ring-size: min(50vw, 200px); }
       .countdown { font-size: 3.5rem; }
-      .speed-num { font-size: 1.6rem; }
-      .mode-name { margin-bottom: 6px; }
-      .btn-big { height: 48px; font-size: 0.9rem; }
+      .speed-v { font-size: 1.3rem; }
+      .btn-go { height: 48px; font-size: 0.85rem; }
+      .strip { margin-bottom: 4px; }
     }
-
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -369,163 +405,97 @@
 </head>
 <body>
   <div class="pulse" id="pulse"></div>
+  <div class="glow"></div>
 
   <div class="app">
-    <!-- Phase strip -->
     <div class="strip">
       <i id="s-w"></i><i id="s-t"></i><i id="s-c"></i>
     </div>
 
-    <!-- Timer hero -->
-    <div class="timer">
-      <div class="phase-name" id="phaseName">Warm Up</div>
-      <div class="mode-name" id="modeName">&nbsp;</div>
-      <div class="countdown" id="countdown">02:00</div>
-      <div class="speed">
-        <span class="speed-num" id="speedNum">6.0</span>
-        <span class="speed-unit">km/h</span>
+    <div class="hero">
+      <div class="ring-wrap">
+        <svg class="ring-svg" viewBox="0 0 200 200">
+          <circle class="ring-track" cx="100" cy="100" r="92"/>
+          <circle class="ring-progress" id="ring" cx="100" cy="100" r="92"
+            stroke-dasharray="578.05" stroke-dashoffset="0"/>
+        </svg>
+        <div class="ring-content">
+          <div class="phase-label" id="phaseName">Warm Up</div>
+          <div class="mode-label" id="modeName">&nbsp;</div>
+          <div class="countdown" id="countdown">02:00</div>
+          <div class="speed-line">
+            <span class="speed-v" id="speedNum">6.0</span>
+            <span class="speed-u">km/h</span>
+          </div>
+        </div>
       </div>
-      <div class="cycle-tag" id="cycleTag" style="display:none">
+
+      <div class="meta" id="cycleTag" style="display:none">
         Cycle <b id="cyNow">1</b> / <b id="cyTotal">6</b>
       </div>
-      <div class="prog">
-        <div class="prog-fill" id="progFill"></div>
-      </div>
-      <div class="next-up" id="nextUp">
-        <span class="next-label">Next</span>
+
+      <div class="next-pill" id="nextUp">
+        <span class="next-arrow">&rarr;</span>
+        <span>Next</span>
         <b id="nextName">--</b>
         <span id="nextSpeed">--</span>
       </div>
     </div>
 
-    <!-- Controls -->
     <div class="ctrls">
-      <button class="btn-big btn-go" id="btnGo">
+      <button class="btn-go" id="btnGo">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Start
       </button>
-      <button class="btn-big btn-reset" id="btnReset" style="display:none">
+      <button class="btn-reset" id="btnReset" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
         Reset
       </button>
     </div>
 
-    <!-- Settings (hidden during workout) -->
     <div class="settings" id="settings">
-      <div class="settings-hdr">Settings</div>
+      <div class="settings-hdr">Configure</div>
       <div class="settings-body">
         <div class="sg">
           <div class="sg-t"><i style="background:var(--warmup)"></i> Warm Up</div>
-          <div class="sr">
-            <span class="sr-label">Speed</span>
-            <div class="sr-ctrl">
-              <button onclick="adj('warmupSpeed',-0.5)" aria-label="Decrease">&minus;</button>
-              <span class="sr-val" id="v-wS">6.0</span>
-              <button onclick="adj('warmupSpeed',0.5)" aria-label="Increase">&plus;</button>
-            </div>
-          </div>
-          <div class="sr">
-            <span class="sr-label">Duration</span>
-            <div class="sr-ctrl">
-              <button onclick="adj('warmupTime',-30)" aria-label="Decrease">&minus;</button>
-              <span class="sr-val" id="v-wT">2:00</span>
-              <button onclick="adj('warmupTime',30)" aria-label="Increase">&plus;</button>
-            </div>
-          </div>
+          <div class="sr"><span class="sr-l">Speed</span><div class="sr-c"><button onclick="adj('warmupSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-wS">6.0</span><button onclick="adj('warmupSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
+          <div class="sr"><span class="sr-l">Duration</span><div class="sr-c"><button onclick="adj('warmupTime',-30)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-wT">2:00</span><button onclick="adj('warmupTime',30)" aria-label="Increase">&plus;</button></div></div>
         </div>
         <div class="sg">
-          <div class="sg-t"><i style="background:var(--fast)"></i> Training</div>
-          <div class="sr">
-            <span class="sr-label">Fast Speed</span>
-            <div class="sr-ctrl">
-              <button onclick="adj('fastSpeed',-0.5)" aria-label="Decrease">&minus;</button>
-              <span class="sr-val" id="v-fS">12.0</span>
-              <button onclick="adj('fastSpeed',0.5)" aria-label="Increase">&plus;</button>
-            </div>
-          </div>
-          <div class="sr">
-            <span class="sr-label">Fast Duration</span>
-            <div class="sr-ctrl">
-              <button onclick="adj('fastTime',-10)" aria-label="Decrease">&minus;</button>
-              <span class="sr-val" id="v-fT">0:30</span>
-              <button onclick="adj('fastTime',10)" aria-label="Increase">&plus;</button>
-            </div>
-          </div>
-          <div class="sr">
-            <span class="sr-label">Slow Speed</span>
-            <div class="sr-ctrl">
-              <button onclick="adj('slowSpeed',-0.5)" aria-label="Decrease">&minus;</button>
-              <span class="sr-val" id="v-sS">7.0</span>
-              <button onclick="adj('slowSpeed',0.5)" aria-label="Increase">&plus;</button>
-            </div>
-          </div>
-          <div class="sr">
-            <span class="sr-label">Slow Duration</span>
-            <div class="sr-ctrl">
-              <button onclick="adj('slowTime',-10)" aria-label="Decrease">&minus;</button>
-              <span class="sr-val" id="v-sT">1:00</span>
-              <button onclick="adj('slowTime',10)" aria-label="Increase">&plus;</button>
-            </div>
-          </div>
-          <div class="sr">
-            <span class="sr-label">Cycles</span>
-            <div class="sr-ctrl">
-              <button onclick="adj('cycles',-1)" aria-label="Decrease">&minus;</button>
-              <span class="sr-val" id="v-cy">6</span>
-              <button onclick="adj('cycles',1)" aria-label="Increase">&plus;</button>
-            </div>
-          </div>
+          <div class="sg-t"><i style="background:var(--sprint)"></i> Training</div>
+          <div class="sr"><span class="sr-l">Sprint Speed</span><div class="sr-c"><button onclick="adj('fastSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-fS">12.0</span><button onclick="adj('fastSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
+          <div class="sr"><span class="sr-l">Sprint Duration</span><div class="sr-c"><button onclick="adj('fastTime',-10)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-fT">0:30</span><button onclick="adj('fastTime',10)" aria-label="Increase">&plus;</button></div></div>
+          <div class="sr"><span class="sr-l">Recovery Speed</span><div class="sr-c"><button onclick="adj('slowSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-sS">7.0</span><button onclick="adj('slowSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
+          <div class="sr"><span class="sr-l">Recovery Duration</span><div class="sr-c"><button onclick="adj('slowTime',-10)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-sT">1:00</span><button onclick="adj('slowTime',10)" aria-label="Increase">&plus;</button></div></div>
+          <div class="sr"><span class="sr-l">Cycles</span><div class="sr-c"><button onclick="adj('cycles',-1)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-cy">6</span><button onclick="adj('cycles',1)" aria-label="Increase">&plus;</button></div></div>
         </div>
         <div class="sg">
           <div class="sg-t"><i style="background:var(--cool)"></i> Cool Down</div>
-          <div class="sr">
-            <span class="sr-label">Speed</span>
-            <div class="sr-ctrl">
-              <button onclick="adj('cooldownSpeed',-0.5)" aria-label="Decrease">&minus;</button>
-              <span class="sr-val" id="v-cS">5.0</span>
-              <button onclick="adj('cooldownSpeed',0.5)" aria-label="Increase">&plus;</button>
-            </div>
-          </div>
-          <div class="sr">
-            <span class="sr-label">Duration</span>
-            <div class="sr-ctrl">
-              <button onclick="adj('cooldownTime',-30)" aria-label="Decrease">&minus;</button>
-              <span class="sr-val" id="v-cT">3:00</span>
-              <button onclick="adj('cooldownTime',30)" aria-label="Increase">&plus;</button>
-            </div>
-          </div>
+          <div class="sr"><span class="sr-l">Speed</span><div class="sr-c"><button onclick="adj('cooldownSpeed',-0.5)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-cS">5.0</span><button onclick="adj('cooldownSpeed',0.5)" aria-label="Increase">&plus;</button></div></div>
+          <div class="sr"><span class="sr-l">Duration</span><div class="sr-c"><button onclick="adj('cooldownTime',-30)" aria-label="Decrease">&minus;</button><span class="sr-v" id="v-cT">3:00</span><button onclick="adj('cooldownTime',30)" aria-label="Increase">&plus;</button></div></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Done -->
-  <div class="done-screen" id="doneScreen">
-    <div class="done-badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <div class="done" id="doneScreen">
+    <div class="done-ring">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
-    <div class="done-h">Workout Complete</div>
-    <div class="done-p">Great run. You crushed it.</div>
+    <div class="done-h">WORKOUT COMPLETE</div>
+    <div class="done-p">You showed up. That's what matters.</div>
     <div class="done-stats">
-      <div class="done-stat">
-        <div class="done-stat-v" id="statTime">--:--</div>
-        <div class="done-stat-l">Total Time</div>
-      </div>
-      <div class="done-stat">
-        <div class="done-stat-v" id="statCy">--</div>
-        <div class="done-stat-l">Cycles</div>
-      </div>
+      <div class="done-stat"><div class="done-stat-v" id="statTime">--:--</div><div class="done-stat-l">Duration</div></div>
+      <div class="done-stat"><div class="done-stat-v" id="statCy">--</div><div class="done-stat-l">Cycles</div></div>
     </div>
-    <button class="btn-big btn-go" onclick="fullReset()" style="width:200px;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-      New Workout
+    <button class="btn-go" onclick="fullReset()" style="width:200px;height:50px;font-size:0.85rem;">
+      Go Again
     </button>
   </div>
 
 <script>
-// ═══════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════
+const CIRC = 2 * Math.PI * 92; // ~578.05
+
 const S = {
   warmupSpeed:6, warmupTime:120,
   fastSpeed:12, fastTime:30,
@@ -544,48 +514,37 @@ const LIM = {
 let phase='idle', timeLeft=0, totalT=0, cy=0;
 let tick=null, on=false, t0=null;
 
-// ═══════════════════════════════════════
-//  AUDIO
-// ═══════════════════════════════════════
+// ── Audio ──
 let ac=null, nodes=[];
 function getAC(){ if(!ac) ac=new(window.AudioContext||window.webkitAudioContext); if(ac.state==='suspended') ac.resume(); return ac; }
 function stopAudio(){ nodes.forEach(n=>{try{n.stop()}catch(e){}}); nodes=[]; }
 
-// Morse dots — rapid staccato (sprint)
 function sndFast(){
   stopAudio(); const c=getAC(), n=c.currentTime;
   let t=n; const dur=5, on=0.07, gap=0.05;
   while(t<n+dur){
     const o=c.createOscillator(), g=c.createGain();
     o.type='square'; o.frequency.value=880;
-    g.gain.setValueAtTime(0,t);
-    g.gain.linearRampToValueAtTime(0.26,t+0.008);
-    g.gain.setValueAtTime(0.26,t+on-0.008);
-    g.gain.linearRampToValueAtTime(0,t+on);
-    o.connect(g).connect(c.destination);
-    o.start(t); o.stop(t+on+0.01); nodes.push(o);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.26,t+0.008);
+    g.gain.setValueAtTime(0.26,t+on-0.008); g.gain.linearRampToValueAtTime(0,t+on);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+on+0.01); nodes.push(o);
     t+=on+gap;
   }
 }
 
-// Morse dashes — slow sustained (recovery)
 function sndSlow(){
   stopAudio(); const c=getAC(), n=c.currentTime;
   let t=n; const dur=5, on=0.30, gap=0.20;
   while(t<n+dur){
     const o=c.createOscillator(), g=c.createGain();
     o.type='sine'; o.frequency.value=440;
-    g.gain.setValueAtTime(0,t);
-    g.gain.linearRampToValueAtTime(0.22,t+0.02);
-    g.gain.setValueAtTime(0.22,t+on-0.03);
-    g.gain.linearRampToValueAtTime(0,t+on);
-    o.connect(g).connect(c.destination);
-    o.start(t); o.stop(t+on+0.01); nodes.push(o);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.22,t+0.02);
+    g.gain.setValueAtTime(0.22,t+on-0.03); g.gain.linearRampToValueAtTime(0,t+on);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+on+0.01); nodes.push(o);
     t+=on+gap;
   }
 }
 
-// Warmup start — ascending chimes
 function sndWarmup(){
   stopAudio(); const c=getAC(), n=c.currentTime;
   const notes=[392,440,523.25,587.33,659.25];
@@ -593,53 +552,39 @@ function sndWarmup(){
   while(t<n+dur){
     const o=c.createOscillator(), g=c.createGain();
     o.type='triangle'; o.frequency.value=notes[i%notes.length];
-    g.gain.setValueAtTime(0,t);
-    g.gain.linearRampToValueAtTime(0.2,t+0.02);
-    g.gain.setValueAtTime(0.2,t+on-0.04);
-    g.gain.linearRampToValueAtTime(0,t+on);
-    o.connect(g).connect(c.destination);
-    o.start(t); o.stop(t+on+0.01); nodes.push(o);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.2,t+0.02);
+    g.gain.setValueAtTime(0.2,t+on-0.04); g.gain.linearRampToValueAtTime(0,t+on);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+on+0.01); nodes.push(o);
     t+=on+gap; i++;
   }
 }
 
-// Training start — rising sweeps
 function sndTrainStart(){
   stopAudio(); const c=getAC(), n=c.currentTime;
   const dur=5, reps=8, rl=dur/reps;
   for(let i=0;i<reps;i++){
     const t=n+i*rl, o=c.createOscillator(), g=c.createGain();
-    o.type='sawtooth';
-    o.frequency.setValueAtTime(300,t);
+    o.type='sawtooth'; o.frequency.setValueAtTime(300,t);
     o.frequency.exponentialRampToValueAtTime(900,t+rl*0.7);
-    g.gain.setValueAtTime(0,t);
-    g.gain.linearRampToValueAtTime(0.18,t+0.02);
-    g.gain.setValueAtTime(0.18,t+rl*0.6);
-    g.gain.linearRampToValueAtTime(0,t+rl*0.9);
-    o.connect(g).connect(c.destination);
-    o.start(t); o.stop(t+rl); nodes.push(o);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.18,t+0.02);
+    g.gain.setValueAtTime(0.18,t+rl*0.6); g.gain.linearRampToValueAtTime(0,t+rl*0.9);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+rl); nodes.push(o);
   }
 }
 
-// Cooldown — falling sweeps
 function sndCooldown(){
   stopAudio(); const c=getAC(), n=c.currentTime;
   const dur=5, reps=5, rl=dur/reps;
   for(let i=0;i<reps;i++){
     const t=n+i*rl, o=c.createOscillator(), g=c.createGain();
-    o.type='sine';
-    o.frequency.setValueAtTime(700,t);
+    o.type='sine'; o.frequency.setValueAtTime(700,t);
     o.frequency.exponentialRampToValueAtTime(280,t+rl*0.8);
-    g.gain.setValueAtTime(0,t);
-    g.gain.linearRampToValueAtTime(0.2,t+0.02);
-    g.gain.setValueAtTime(0.2,t+rl*0.6);
-    g.gain.linearRampToValueAtTime(0,t+rl*0.95);
-    o.connect(g).connect(c.destination);
-    o.start(t); o.stop(t+rl); nodes.push(o);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.2,t+0.02);
+    g.gain.setValueAtTime(0.2,t+rl*0.6); g.gain.linearRampToValueAtTime(0,t+rl*0.95);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+rl); nodes.push(o);
   }
 }
 
-// Complete — triumphant loop
 function sndDone(){
   stopAudio(); const c=getAC(), n=c.currentTime;
   const mel=[523.25,659.25,783.99,1046.5];
@@ -647,87 +592,75 @@ function sndDone(){
   while(t<n+dur){
     const o=c.createOscillator(), g=c.createGain();
     o.type='sine'; o.frequency.value=mel[i%mel.length];
-    g.gain.setValueAtTime(0,t);
-    g.gain.linearRampToValueAtTime(0.25,t+0.02);
-    g.gain.setValueAtTime(0.25,t+on-0.04);
-    g.gain.linearRampToValueAtTime(0,t+on);
-    o.connect(g).connect(c.destination);
-    o.start(t); o.stop(t+on+0.01); nodes.push(o);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.25,t+0.02);
+    g.gain.setValueAtTime(0.25,t+on-0.04); g.gain.linearRampToValueAtTime(0,t+on);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+on+0.01); nodes.push(o);
     t+=on+gap; i++;
   }
 }
 
-// 3-2-1 countdown beeps
 function sndCountdown(){
   const c=getAC(), n=c.currentTime;
   for(let i=0;i<3;i++){
     const o=c.createOscillator(), g=c.createGain();
     o.type='sine'; o.frequency.value= i<2 ? 660 : 990;
-    g.gain.setValueAtTime(0, n+i);
-    g.gain.linearRampToValueAtTime(0.3, n+i+0.02);
-    g.gain.setValueAtTime(0.3, n+i+0.12);
-    g.gain.linearRampToValueAtTime(0, n+i+0.2);
-    o.connect(g).connect(c.destination);
-    o.start(n+i); o.stop(n+i+0.25); nodes.push(o);
+    g.gain.setValueAtTime(0,n+i); g.gain.linearRampToValueAtTime(0.3,n+i+0.02);
+    g.gain.setValueAtTime(0.3,n+i+0.12); g.gain.linearRampToValueAtTime(0,n+i+0.2);
+    o.connect(g).connect(c.destination); o.start(n+i); o.stop(n+i+0.25); nodes.push(o);
   }
 }
 
-// ═══════════════════════════════════════
-//  PULSE
-// ═══════════════════════════════════════
+// ── Pulse ──
 let pt=null;
-function pulse(color){
-  const e=document.getElementById('pulse');
-  e.classList.remove('on');
-  e.style.setProperty('--pulse-c', color);
-  void e.offsetWidth;
+function pulse(c){
+  const e=$('pulse'); e.classList.remove('on');
+  e.style.setProperty('--pc',c); void e.offsetWidth;
   e.classList.add('on');
   if(pt) clearTimeout(pt);
   pt=setTimeout(()=>e.classList.remove('on'), 5200);
 }
 
-// ═══════════════════════════════════════
-//  THEME
-// ═══════════════════════════════════════
-const r = document.documentElement.style;
-const TH = {
-  warmup()  { r.setProperty('--phase-bg','var(--warmup-bg)'); r.setProperty('--accent','var(--warmup)'); r.setProperty('--accent-dim','var(--warmup-dim)'); },
-  fast()    { r.setProperty('--phase-bg','var(--fast-bg)');   r.setProperty('--accent','var(--fast)');   r.setProperty('--accent-dim','var(--fast-dim)'); },
-  slow()    { r.setProperty('--phase-bg','var(--slow-bg)');   r.setProperty('--accent','var(--slow)');   r.setProperty('--accent-dim','var(--slow-dim)'); },
-  cooldown(){ r.setProperty('--phase-bg','var(--cool-bg)');   r.setProperty('--accent','var(--cool)');   r.setProperty('--accent-dim','var(--cool-dim)'); },
-  done()    { r.setProperty('--phase-bg','var(--bg)');        r.setProperty('--accent','var(--done)');   r.setProperty('--accent-dim','var(--done-dim)'); },
-  idle()    { r.setProperty('--phase-bg','var(--bg)');        r.setProperty('--accent','var(--warmup)'); r.setProperty('--accent-dim','var(--warmup-dim)'); },
+// ── Theme ──
+const rs=document.documentElement.style;
+const TH={
+  warmup()  { rs.setProperty('--a','var(--warmup)');  rs.setProperty('--a-bg','var(--warmup-bg)');  rs.setProperty('--a-glow','var(--warmup-glow)'); },
+  fast()    { rs.setProperty('--a','var(--sprint)');   rs.setProperty('--a-bg','var(--sprint-bg)');  rs.setProperty('--a-glow','var(--sprint-glow)'); },
+  slow()    { rs.setProperty('--a','var(--recover)');  rs.setProperty('--a-bg','var(--recover-bg)'); rs.setProperty('--a-glow','var(--recover-glow)'); },
+  cooldown(){ rs.setProperty('--a','var(--cool)');     rs.setProperty('--a-bg','var(--cool-bg)');    rs.setProperty('--a-glow','var(--cool-glow)'); },
+  done()    { rs.setProperty('--a','var(--done-c)');   rs.setProperty('--a-bg','var(--bg)');         rs.setProperty('--a-glow','rgba(52,211,153,0.12)'); },
+  idle()    { rs.setProperty('--a','var(--warmup)');   rs.setProperty('--a-bg','var(--bg)');         rs.setProperty('--a-glow','var(--warmup-glow)'); },
 };
-const PC = { warmup:'#fbbf24', fast:'#f87171', slow:'#60a5fa', cooldown:'#22d3ee', done:'#34d399' };
+const PC={ warmup:'#f0a830', fast:'#ff4d4d', slow:'#4da6ff', cooldown:'#00d4aa', done:'#34d399' };
 
-// ═══════════════════════════════════════
-//  STRIP
-// ═══════════════════════════════════════
+// ── Helpers ──
+const $=id=>document.getElementById(id);
+function fmt(s){ return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
+function fmtB(s){ return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
+
+// ── Strip ──
 function updStrip(){
-  const w=$('s-w'), t=$('s-t'), c=$('s-c');
+  const w=$('s-w'),t=$('s-t'),c=$('s-c');
   w.className=t.className=c.className='';
-  if(phase==='warmup'){ w.className='on'; }
+  if(phase==='warmup') w.className='on';
   else if(phase==='fast'||phase==='slow'){ w.className='done'; t.className='on'; }
   else if(phase==='cooldown'){ w.className='done'; t.className='done'; c.className='on'; }
   else if(phase==='done'){ w.className='done'; t.className='done'; c.className='done'; }
 }
 
-// ═══════════════════════════════════════
-//  SETTINGS
-// ═══════════════════════════════════════
-const $=id=>document.getElementById(id);
+// ── Ring ──
+function setRing(pct){
+  const offset = CIRC * (1 - pct);
+  $('ring').style.strokeDashoffset = offset;
+}
 
+// ── Settings ──
 function adj(k,d){
   if(on) return;
   const [mn,mx]=LIM[k]; let v=S[k]+d;
   v=Math.max(mn,Math.min(mx,v));
   S[k]=k.includes('Speed')? Math.round(v*10)/10 : Math.round(v);
-  renderS();
-  if(phase==='idle') renderIdle();
+  renderS(); if(phase==='idle') renderIdle();
 }
-
-function fmt(s){ return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
-function fmtB(s){ return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
 
 function renderS(){
   $('v-wS').textContent=S.warmupSpeed.toFixed(1);
@@ -744,84 +677,56 @@ function renderS(){
 function renderIdle(){
   $('countdown').textContent=fmtB(S.warmupTime);
   $('speedNum').textContent=S.warmupSpeed.toFixed(1);
+  setRing(1);
 }
 
-// ═══════════════════════════════════════
-//  NEXT-UP PREVIEW
-// ═══════════════════════════════════════
+// ── Next up ──
 function showNext(){
-  const el=$('nextUp');
-  let name='', spd='';
+  const el=$('nextUp'); let name='',spd='';
   switch(phase){
-    case 'warmup':
-      name='Sprint'; spd=S.fastSpeed.toFixed(1)+' km/h'; break;
-    case 'fast':
-      name='Recovery'; spd=S.slowSpeed.toFixed(1)+' km/h'; break;
+    case 'warmup': name='Sprint'; spd=S.fastSpeed.toFixed(1)+' km/h'; break;
+    case 'fast': name='Recovery'; spd=S.slowSpeed.toFixed(1)+' km/h'; break;
     case 'slow':
       if(cy>=S.cycles){ name='Cool Down'; spd=S.cooldownSpeed.toFixed(1)+' km/h'; }
-      else { name='Sprint'; spd=S.fastSpeed.toFixed(1)+' km/h'; }
-      break;
-    case 'cooldown':
-      name='Finish'; spd=''; break;
-    default:
-      el.classList.remove('show'); return;
+      else { name='Sprint'; spd=S.fastSpeed.toFixed(1)+' km/h'; } break;
+    case 'cooldown': name='Finish'; spd=''; break;
+    default: el.classList.remove('show'); return;
   }
   $('nextName').textContent=name;
   $('nextSpeed').textContent=spd;
   el.classList.add('show');
 }
 
-// ═══════════════════════════════════════
-//  RENDER
-// ═══════════════════════════════════════
+// ── Render ──
 function render(){
   $('countdown').textContent=fmtB(timeLeft);
   let spd=0, pN='', mN='', showCy=false;
   switch(phase){
-    case 'warmup':   spd=S.warmupSpeed;   pN='Warm Up';   TH.warmup();   break;
-    case 'fast':     spd=S.fastSpeed;     pN='Training';  mN='Sprint';   showCy=true; TH.fast(); break;
-    case 'slow':     spd=S.slowSpeed;     pN='Training';  mN='Recovery'; showCy=true; TH.slow(); break;
+    case 'warmup':   spd=S.warmupSpeed; pN='Warm Up';   TH.warmup(); break;
+    case 'fast':     spd=S.fastSpeed;   pN='Training';  mN='Sprint';   showCy=true; TH.fast(); break;
+    case 'slow':     spd=S.slowSpeed;   pN='Training';  mN='Recovery'; showCy=true; TH.slow(); break;
     case 'cooldown': spd=S.cooldownSpeed; pN='Cool Down'; TH.cooldown(); break;
   }
   $('speedNum').textContent=spd.toFixed(1);
   $('phaseName').textContent=pN;
   $('modeName').textContent=mN||'\u00A0';
-  if(showCy){
-    $('cycleTag').style.display='block';
-    $('cyNow').textContent=cy;
-    $('cyTotal').textContent=S.cycles;
-  } else {
-    $('cycleTag').style.display='none';
-  }
-  const pct=totalT>0?(timeLeft/totalT)*100:100;
-  $('progFill').style.width=pct+'%';
-  updStrip();
-  showNext();
+  if(showCy){ $('cycleTag').style.display='block'; $('cyNow').textContent=cy; $('cyTotal').textContent=S.cycles; }
+  else { $('cycleTag').style.display='none'; }
+  const pct=totalT>0? timeLeft/totalT : 1;
+  setRing(pct);
+  updStrip(); showNext();
 }
 
-// ═══════════════════════════════════════
-//  PHASE MACHINE
-// ═══════════════════════════════════════
-let countdownPlayed = false;
+// ── Phase machine ──
+let cdPlayed=false;
 
 function go(p){
-  phase=p;
-  countdownPlayed=false;
+  phase=p; cdPlayed=false;
   switch(p){
-    case 'warmup':
-      timeLeft=S.warmupTime; totalT=S.warmupTime; cy=0;
-      sndWarmup(); pulse(PC.warmup); break;
-    case 'fast':
-      cy++;
-      timeLeft=S.fastTime; totalT=S.fastTime;
-      cy===1 ? sndTrainStart() : sndFast();
-      pulse(PC.fast); break;
-    case 'slow':
-      timeLeft=S.slowTime; totalT=S.slowTime;
-      sndSlow(); pulse(PC.slow); break;
-    case 'cooldown':
-      timeLeft=S.cooldownTime; totalT=S.cooldownTime;
-      sndCooldown(); pulse(PC.cooldown); break;
+    case 'warmup': timeLeft=S.warmupTime; totalT=S.warmupTime; cy=0; sndWarmup(); pulse(PC.warmup); break;
+    case 'fast': cy++; timeLeft=S.fastTime; totalT=S.fastTime; cy===1?sndTrainStart():sndFast(); pulse(PC.fast); break;
+    case 'slow': timeLeft=S.slowTime; totalT=S.slowTime; sndSlow(); pulse(PC.slow); break;
+    case 'cooldown': timeLeft=S.cooldownTime; totalT=S.cooldownTime; sndCooldown(); pulse(PC.cooldown); break;
     case 'done': finish(); return;
   }
   render();
@@ -829,9 +734,9 @@ function go(p){
 
 function next(){
   switch(phase){
-    case 'warmup':  go('fast'); break;
-    case 'fast':    go('slow'); break;
-    case 'slow':    cy>=S.cycles ? go('cooldown') : go('fast'); break;
+    case 'warmup': go('fast'); break;
+    case 'fast': go('slow'); break;
+    case 'slow': cy>=S.cycles ? go('cooldown') : go('fast'); break;
     case 'cooldown': go('done'); break;
   }
 }
@@ -839,39 +744,27 @@ function next(){
 function tickFn(){
   if(!on) return;
   timeLeft--;
-  // 3-2-1 countdown warning
-  if(timeLeft===3 && !countdownPlayed){
-    countdownPlayed=true;
-    sndCountdown();
-  }
-  if(timeLeft<=0) next();
-  else render();
+  if(timeLeft===3 && !cdPlayed){ cdPlayed=true; sndCountdown(); }
+  if(timeLeft<=0) next(); else render();
 }
 
-// ═══════════════════════════════════════
-//  CONTROLS
-// ═══════════════════════════════════════
-const ico = {
-  play:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
-  pause: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>',
+// ── Controls ──
+const ico={
+  play:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>',
 };
 
 function start(){
-  const btn=$('btnGo');
-  if(on){
-    on=false; clearInterval(tick); stopAudio();
-    btn.innerHTML=ico.play+' Resume'; return;
-  }
+  const b=$('btnGo');
+  if(on){ on=false; clearInterval(tick); stopAudio(); b.innerHTML=ico.play+' Resume'; return; }
   getAC();
   if(phase==='idle'||phase==='done'){
-    t0=Date.now(); on=true;
-    go('warmup');
+    t0=Date.now(); on=true; go('warmup');
     $('settings').classList.add('collapsed');
     $('btnReset').style.display='';
   } else { on=true; }
-  btn.innerHTML=ico.pause+' Pause';
-  clearInterval(tick);
-  tick=setInterval(tickFn, 1000);
+  b.innerHTML=ico.pause+' Pause';
+  clearInterval(tick); tick=setInterval(tickFn,1000);
 }
 
 function reset(){
@@ -883,15 +776,13 @@ function reset(){
   $('phaseName').textContent='Warm Up';
   $('modeName').textContent='\u00A0';
   $('cycleTag').style.display='none';
-  $('progFill').style.width='100%';
   $('pulse').classList.remove('on');
   $('nextUp').classList.remove('show');
   TH.idle(); updStrip(); renderIdle();
 }
 
 function finish(){
-  on=false; clearInterval(tick);
-  phase='done';
+  on=false; clearInterval(tick); phase='done';
   sndDone(); pulse(PC.done); TH.done(); updStrip();
   const el=Math.round((Date.now()-t0)/1000);
   $('statTime').textContent=fmtB(el);
@@ -899,10 +790,7 @@ function finish(){
   setTimeout(()=>$('doneScreen').classList.add('on'), 2500);
 }
 
-function fullReset(){
-  $('doneScreen').classList.remove('on');
-  reset();
-}
+function fullReset(){ $('doneScreen').classList.remove('on'); reset(); }
 
 $('btnGo').addEventListener('click', start);
 $('btnReset').addEventListener('click', reset);
