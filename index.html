@@ -67,7 +67,7 @@
 
     /* ── Pulse ── */
     .pulse { position:fixed; inset:0; pointer-events:none; z-index:90; opacity:0; }
-    .pulse.on { animation: gp 1s ease-in-out 7; }
+    .pulse.on { animation: gp 0.8s ease-in-out 4; }
     @keyframes gp {
       0%   { opacity:0; box-shadow: inset 0 0 100px 30px var(--pc); }
       35%  { opacity:1; box-shadow: inset 0 0 180px 60px var(--pc); }
@@ -388,6 +388,99 @@
       font-variant-numeric: tabular-nums;
     }
 
+    /* ── Sheet tabs ── */
+    .sheet-tabs {
+      display: flex; gap: 0;
+      padding: 0 24px 12px;
+      flex-shrink: 0;
+    }
+    .sheet-tab {
+      flex: 1; height: 36px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--t3);
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.72rem; font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: all 0.2s;
+    }
+    .sheet-tab:first-child { border-radius: 8px 0 0 8px; }
+    .sheet-tab:last-child { border-radius: 0 8px 8px 0; }
+    .sheet-tab.active {
+      background: rgba(255,255,255,0.08);
+      color: var(--t1);
+      border-color: rgba(255,255,255,0.15);
+    }
+    .sheet-tab:active { transform: scale(0.97); }
+    .sheet-panel { display: none; }
+    .sheet-panel.active { display: block; }
+
+    /* ── Volume slider ── */
+    .vol-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0;
+    }
+    .vol-row svg { width: 18px; height: 18px; color: var(--t3); flex-shrink: 0; }
+    .vol-slider {
+      flex: 1; height: 4px;
+      -webkit-appearance: none; appearance: none;
+      background: var(--line);
+      border-radius: 2px; outline: none;
+    }
+    .vol-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--t1);
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .vol-slider::-moz-range-thumb {
+      width: 20px; height: 20px;
+      border-radius: 50%; border: none;
+      background: var(--t1);
+      cursor: pointer;
+    }
+    .vol-val {
+      font-size: 0.78rem; font-weight: 700;
+      color: var(--t2);
+      min-width: 32px; text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Sound test buttons ── */
+    .snd-test {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .snd-test:last-child { border-bottom: none; }
+    .snd-test-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.82rem; font-weight: 500; color: var(--t2);
+    }
+    .snd-test-label i {
+      width: 8px; height: 8px; border-radius: 50%;
+      display: inline-block; font-style: normal;
+    }
+    .snd-test-play {
+      width: 40px; height: 40px;
+      min-width: 44px; min-height: 44px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--t2); border-radius: 50%;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .snd-test-play:hover { background: rgba(255,255,255,0.06); color: var(--t1); }
+    .snd-test-play:active { transform: scale(0.9); }
+    .snd-test-play svg { width: 16px; height: 16px; }
+
     /* ════════════════
        DONE SCREEN
        ════════════════ */
@@ -532,24 +625,74 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
+    <div class="sheet-tabs">
+      <button class="sheet-tab active" onclick="switchTab('workout')">Workout</button>
+      <button class="sheet-tab" onclick="switchTab('sounds')">Sounds</button>
+    </div>
     <div class="sheet-body">
-      <div class="sg">
-        <div class="sg-t"><i style="background:var(--warmup)"></i> Warm Up</div>
-        <div class="sr"><span class="sr-l">Speed</span><div class="sr-c"><button onclick="adj('warmupSpeed',-0.5)">&minus;</button><span class="sr-v" id="v-wS">6.0</span><button onclick="adj('warmupSpeed',0.5)">&plus;</button></div></div>
-        <div class="sr"><span class="sr-l">Duration</span><div class="sr-c"><button onclick="adj('warmupTime',-30)">&minus;</button><span class="sr-v" id="v-wT">2:00</span><button onclick="adj('warmupTime',30)">&plus;</button></div></div>
+      <!-- Workout tab -->
+      <div class="sheet-panel active" id="panelWorkout">
+        <div class="sg">
+          <div class="sg-t"><i style="background:var(--warmup)"></i> Warm Up</div>
+          <div class="sr"><span class="sr-l">Speed</span><div class="sr-c"><button onclick="adj('warmupSpeed',-0.5)">&minus;</button><span class="sr-v" id="v-wS">6.0</span><button onclick="adj('warmupSpeed',0.5)">&plus;</button></div></div>
+          <div class="sr"><span class="sr-l">Duration</span><div class="sr-c"><button onclick="adj('warmupTime',-30)">&minus;</button><span class="sr-v" id="v-wT">2:00</span><button onclick="adj('warmupTime',30)">&plus;</button></div></div>
+        </div>
+        <div class="sg">
+          <div class="sg-t"><i style="background:var(--sprint)"></i> Training</div>
+          <div class="sr"><span class="sr-l">Sprint Speed</span><div class="sr-c"><button onclick="adj('fastSpeed',-0.5)">&minus;</button><span class="sr-v" id="v-fS">12.0</span><button onclick="adj('fastSpeed',0.5)">&plus;</button></div></div>
+          <div class="sr"><span class="sr-l">Sprint Time</span><div class="sr-c"><button onclick="adj('fastTime',-10)">&minus;</button><span class="sr-v" id="v-fT">0:30</span><button onclick="adj('fastTime',10)">&plus;</button></div></div>
+          <div class="sr"><span class="sr-l">Recovery Speed</span><div class="sr-c"><button onclick="adj('slowSpeed',-0.5)">&minus;</button><span class="sr-v" id="v-sS">7.0</span><button onclick="adj('slowSpeed',0.5)">&plus;</button></div></div>
+          <div class="sr"><span class="sr-l">Recovery Time</span><div class="sr-c"><button onclick="adj('slowTime',-10)">&minus;</button><span class="sr-v" id="v-sT">1:00</span><button onclick="adj('slowTime',10)">&plus;</button></div></div>
+          <div class="sr"><span class="sr-l">Cycles</span><div class="sr-c"><button onclick="adj('cycles',-1)">&minus;</button><span class="sr-v" id="v-cy">6</span><button onclick="adj('cycles',1)">&plus;</button></div></div>
+        </div>
+        <div class="sg">
+          <div class="sg-t"><i style="background:var(--cool)"></i> Cool Down</div>
+          <div class="sr"><span class="sr-l">Speed</span><div class="sr-c"><button onclick="adj('cooldownSpeed',-0.5)">&minus;</button><span class="sr-v" id="v-cS">5.0</span><button onclick="adj('cooldownSpeed',0.5)">&plus;</button></div></div>
+          <div class="sr"><span class="sr-l">Duration</span><div class="sr-c"><button onclick="adj('cooldownTime',-30)">&minus;</button><span class="sr-v" id="v-cT">3:00</span><button onclick="adj('cooldownTime',30)">&plus;</button></div></div>
+        </div>
       </div>
-      <div class="sg">
-        <div class="sg-t"><i style="background:var(--sprint)"></i> Training</div>
-        <div class="sr"><span class="sr-l">Sprint Speed</span><div class="sr-c"><button onclick="adj('fastSpeed',-0.5)">&minus;</button><span class="sr-v" id="v-fS">12.0</span><button onclick="adj('fastSpeed',0.5)">&plus;</button></div></div>
-        <div class="sr"><span class="sr-l">Sprint Time</span><div class="sr-c"><button onclick="adj('fastTime',-10)">&minus;</button><span class="sr-v" id="v-fT">0:30</span><button onclick="adj('fastTime',10)">&plus;</button></div></div>
-        <div class="sr"><span class="sr-l">Recovery Speed</span><div class="sr-c"><button onclick="adj('slowSpeed',-0.5)">&minus;</button><span class="sr-v" id="v-sS">7.0</span><button onclick="adj('slowSpeed',0.5)">&plus;</button></div></div>
-        <div class="sr"><span class="sr-l">Recovery Time</span><div class="sr-c"><button onclick="adj('slowTime',-10)">&minus;</button><span class="sr-v" id="v-sT">1:00</span><button onclick="adj('slowTime',10)">&plus;</button></div></div>
-        <div class="sr"><span class="sr-l">Cycles</span><div class="sr-c"><button onclick="adj('cycles',-1)">&minus;</button><span class="sr-v" id="v-cy">6</span><button onclick="adj('cycles',1)">&plus;</button></div></div>
-      </div>
-      <div class="sg">
-        <div class="sg-t"><i style="background:var(--cool)"></i> Cool Down</div>
-        <div class="sr"><span class="sr-l">Speed</span><div class="sr-c"><button onclick="adj('cooldownSpeed',-0.5)">&minus;</button><span class="sr-v" id="v-cS">5.0</span><button onclick="adj('cooldownSpeed',0.5)">&plus;</button></div></div>
-        <div class="sr"><span class="sr-l">Duration</span><div class="sr-c"><button onclick="adj('cooldownTime',-30)">&minus;</button><span class="sr-v" id="v-cT">3:00</span><button onclick="adj('cooldownTime',30)">&plus;</button></div></div>
+      <!-- Sounds tab -->
+      <div class="sheet-panel" id="panelSounds">
+        <div class="sg">
+          <div class="sg-t">Volume</div>
+          <div class="vol-row">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/></svg>
+            <input type="range" class="vol-slider" id="volSlider" min="0" max="100" value="80">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            <span class="vol-val" id="volVal">80%</span>
+          </div>
+        </div>
+        <div class="sg">
+          <div class="sg-t">Test Sounds</div>
+          <div class="snd-test">
+            <span class="snd-test-label"><i style="background:var(--warmup)"></i> Warm Up</span>
+            <button class="snd-test-play" onclick="testSound(sndWarmup)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+          </div>
+          <div class="snd-test">
+            <span class="snd-test-label"><i style="background:var(--sprint)"></i> Training Start</span>
+            <button class="snd-test-play" onclick="testSound(sndTrainStart)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+          </div>
+          <div class="snd-test">
+            <span class="snd-test-label"><i style="background:var(--sprint)"></i> Sprint</span>
+            <button class="snd-test-play" onclick="testSound(sndFast)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+          </div>
+          <div class="snd-test">
+            <span class="snd-test-label"><i style="background:var(--recover)"></i> Recovery</span>
+            <button class="snd-test-play" onclick="testSound(sndSlow)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+          </div>
+          <div class="snd-test">
+            <span class="snd-test-label"><i style="background:var(--cool)"></i> Cool Down</span>
+            <button class="snd-test-play" onclick="testSound(sndCooldown)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+          </div>
+          <div class="snd-test">
+            <span class="snd-test-label"><i style="background:var(--done-c)"></i> Complete</span>
+            <button class="snd-test-play" onclick="testSound(sndDone)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+          </div>
+          <div class="snd-test">
+            <span class="snd-test-label"><i style="background:var(--t2)"></i> Countdown</span>
+            <button class="snd-test-play" onclick="testSound(sndCountdown)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -620,8 +763,25 @@ document.addEventListener('visibilitychange', ()=>{
 });
 
 // ── Audio ──
-let ac=null, nodes=[], scheduledIds=[];
-function getAC(){ if(!ac) ac=new(window.AudioContext||window.webkitAudioContext); if(ac.state==='suspended') ac.resume(); return ac; }
+let ac=null, masterGain=null, nodes=[], scheduledIds=[];
+let volume = 0.8; // 0-1
+try { const sv=localStorage.getItem('hiit-vol'); if(sv!==null) volume=parseFloat(sv); } catch(e){}
+
+function getAC(){
+  if(!ac){
+    ac=new(window.AudioContext||window.webkitAudioContext);
+    masterGain=ac.createGain();
+    masterGain.gain.value=volume;
+    masterGain.connect(ac.destination);
+  }
+  if(ac.state==='suspended') ac.resume();
+  return ac;
+}
+function setVolume(v){
+  volume=v;
+  if(masterGain) masterGain.gain.value=v;
+  try { localStorage.setItem('hiit-vol', v); } catch(e){}
+}
 function stopAudio(){
   nodes.forEach(n=>{try{n.stop()}catch(e){}});
   nodes=[];
@@ -629,35 +789,18 @@ function stopAudio(){
   scheduledIds=[];
 }
 
-// Helper: play a tone with optional pitch sweep
-function tone(freq, dur, type, vol, endFreq){
-  const c=getAC(), t=c.currentTime;
-  const o=c.createOscillator(), g=c.createGain();
-  o.type=type; o.frequency.setValueAtTime(freq,t);
-  if(endFreq) o.frequency.exponentialRampToValueAtTime(endFreq,t+dur*0.8);
-  g.gain.setValueAtTime(0,t);
-  g.gain.linearRampToValueAtTime(vol,t+0.015);
-  g.gain.setValueAtTime(vol,t+dur*0.6);
-  g.gain.exponentialRampToValueAtTime(0.001,t+dur);
-  o.connect(g).connect(c.destination);
-  o.start(t); o.stop(t+dur+0.01); nodes.push(o);
-}
-
-// Helper: play a repeating pattern using setTimeout for cancellability
-function seq(notes, gap, type, vol, dur){
+// Play a repeating chime pattern. Total duration ~3.5s (pattern x2 with pause)
+function seq(notes, gap, type, vol){
   stopAudio();
-  const startMs = performance.now();
   const patLen = notes.length * gap;
-  const pauseBetween = 0.6;
-  const cycleLen = patLen + pauseBetween;
-  let offset = 0;
-  function schedulePattern(){
-    if(performance.now() - startMs > dur*1000) return;
+  const pause = 0.5;
+  const reps = 2; // play pattern twice
+  for(let r=0; r<reps; r++){
+    const base = r * (patLen + pause);
     notes.forEach((n,i)=>{
-      const delay = (offset + i*gap)*1000;
-      if(delay > dur*1000) return;
+      const delay = (base + i*gap)*1000;
       const id = setTimeout(()=>{
-        if(!on && phase!=='done') return; // don't play if paused (except done screen)
+        if(!on && phase!=='done' && !testing) return;
         const c=getAC(), t=c.currentTime;
         const o=c.createOscillator(), g=c.createGain();
         o.type=type; o.frequency.value=n.f;
@@ -665,54 +808,60 @@ function seq(notes, gap, type, vol, dur){
         g.gain.linearRampToValueAtTime(vol,t+0.01);
         g.gain.setValueAtTime(vol,t+n.d*0.5);
         g.gain.exponentialRampToValueAtTime(0.001,t+n.d);
-        o.connect(g).connect(c.destination);
+        o.connect(g).connect(masterGain);
         o.start(t); o.stop(t+n.d+0.01); nodes.push(o);
       }, delay);
       scheduledIds.push(id);
     });
-    offset += cycleLen;
-    if(offset < dur){
-      const id = setTimeout(schedulePattern, cycleLen*1000);
-      scheduledIds.push(id);
-    }
   }
-  schedulePattern();
 }
 
-const SND_DUR = 7;
+let testing = false;
+function testSound(fn){
+  getAC();
+  testing = true;
+  fn();
+  setTimeout(()=>{ testing=false; }, 4000);
+}
 
+// Sprint: 3 rapid ascending pips x2 (~3.3s)
 function sndFast(){
-  seq([{f:880,d:0.08},{f:1100,d:0.08},{f:1320,d:0.12}], 0.14, 'sine', 0.3, SND_DUR);
+  seq([{f:880,d:0.08},{f:1100,d:0.08},{f:1320,d:0.12}], 0.14, 'sine', 0.3);
 }
+// Recovery: 2 soft descending tones x2 (~3s)
 function sndSlow(){
-  seq([{f:660,d:0.15},{f:440,d:0.2}], 0.25, 'sine', 0.22, SND_DUR);
+  seq([{f:660,d:0.15},{f:440,d:0.2}], 0.25, 'sine', 0.22);
 }
+// Warmup: gentle rising chime x2 (~3.4s)
 function sndWarmup(){
-  seq([{f:523,d:0.12},{f:659,d:0.12},{f:784,d:0.18}], 0.18, 'triangle', 0.2, SND_DUR);
+  seq([{f:523,d:0.12},{f:659,d:0.12},{f:784,d:0.18}], 0.18, 'triangle', 0.2);
 }
+// Training start: urgent double-hit x2 (~3.1s)
 function sndTrainStart(){
-  seq([{f:740,d:0.1},{f:988,d:0.15}], 0.18, 'sine', 0.3, SND_DUR);
+  seq([{f:740,d:0.1},{f:988,d:0.15}], 0.18, 'sine', 0.3);
 }
+// Cooldown: calm descending notes x2 (~3.4s)
 function sndCooldown(){
-  seq([{f:784,d:0.18},{f:523,d:0.25}], 0.28, 'sine', 0.2, SND_DUR);
+  seq([{f:784,d:0.18},{f:523,d:0.25}], 0.28, 'sine', 0.2);
 }
+// Done: major chord arpeggio x2 (~3.8s)
 function sndDone(){
-  seq([{f:523,d:0.12},{f:659,d:0.12},{f:784,d:0.12},{f:1047,d:0.3}], 0.18, 'sine', 0.25, SND_DUR);
+  seq([{f:523,d:0.12},{f:659,d:0.12},{f:784,d:0.12},{f:1047,d:0.3}], 0.18, 'sine', 0.25);
 }
 
-// Countdown: 3 ticks, but stop early if phase changes
+// Countdown: 3 ticks at 1s intervals
 function sndCountdown(){
   const c=getAC();
   for(let i=0;i<3;i++){
     const id = setTimeout(()=>{
-      if(timeLeft <= 0) return; // phase already changed, skip
+      if(timeLeft <= 0 && !testing) return;
       const t=c.currentTime, o=c.createOscillator(), g=c.createGain();
       o.type='sine'; o.frequency.value= i<2 ? 660 : 990;
       g.gain.setValueAtTime(0,t);
       g.gain.linearRampToValueAtTime(0.28,t+0.01);
       g.gain.setValueAtTime(0.28,t+0.06);
       g.gain.exponentialRampToValueAtTime(0.001,t+0.15);
-      o.connect(g).connect(c.destination);
+      o.connect(g).connect(masterGain);
       o.start(t); o.stop(t+0.2); nodes.push(o);
     }, i*1000);
     scheduledIds.push(id);
@@ -726,7 +875,7 @@ function pulse(c){
   e.style.setProperty('--pc',c); void e.offsetWidth;
   e.classList.add('on');
   if(pt) clearTimeout(pt);
-  pt=setTimeout(()=>e.classList.remove('on'), 7200);
+  pt=setTimeout(()=>e.classList.remove('on'), 3500);
 }
 
 // ── Theme ──
@@ -964,6 +1113,32 @@ function fullReset(){ $('doneScreen').classList.remove('on'); reset(); }
 $('btnGo').addEventListener('click', start);
 $('btnSkip').addEventListener('click', skip);
 $('btnReset').addEventListener('click', reset);
+
+// ── Tab switching ──
+function switchTab(tab){
+  document.querySelectorAll('.sheet-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.sheet-panel').forEach(p=>p.classList.remove('active'));
+  if(tab==='sounds'){
+    document.querySelectorAll('.sheet-tab')[1].classList.add('active');
+    $('panelSounds').classList.add('active');
+  } else {
+    document.querySelectorAll('.sheet-tab')[0].classList.add('active');
+    $('panelWorkout').classList.add('active');
+  }
+}
+
+// ── Volume slider ──
+(function initVol(){
+  const sl=$('volSlider'), vl=$('volVal');
+  sl.value=Math.round(volume*100);
+  vl.textContent=Math.round(volume*100)+'%';
+  sl.addEventListener('input', ()=>{
+    const v=parseInt(sl.value)/100;
+    setVolume(v);
+    vl.textContent=sl.value+'%';
+  });
+})();
+
 renderS(); renderIdle();
 </script>
 </body>
