@@ -55,6 +55,4 @@ Zero dependencies — a single HTML file with inline CSS and JavaScript.
 - CSS custom properties for dynamic phase theming
 - localStorage for settings persistence
 
-## Built by
-
-Made in Fukuoka.
+@bymarselb
