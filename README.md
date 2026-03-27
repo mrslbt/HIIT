@@ -22,7 +22,7 @@ Every speed, duration, and cycle count is configurable in the settings panel.
 
 ## Features
 
-- **Large countdown timer** — Bebas Neue font, readable from a distance while running
+- **Large countdown timer**
 - **Speed display** — shows the exact km/h to dial in for each phase
 - **Audio cues** — distinct synthesized chime patterns for each phase transition, plus a 3-second countdown warning before every switch
 - **Color-coded phases** — amber (warm up), red (sprint), blue (recovery), teal (cool down), green (done) with ambient glow effects
